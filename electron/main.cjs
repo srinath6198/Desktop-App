@@ -1,41 +1,78 @@
-const { app, BrowserWindow } = require('electron')
-const { join } = require('node:path')
+
+const { app, BrowserWindow, ipcMain, shell } = require("electron");
+const path = require("path");
+
+const {
+  initializeDatabase,
+  closeDatabase,
+} = require("./database/connection.cjs");
+
+const {
+  registerProductHandlers,
+} = require("./ipc/product.ipc.cjs");
 
 function createWindow() {
-  const mainWindow = new BrowserWindow({
+  const win = new BrowserWindow({
     width: 1280,
     height: 800,
-    minWidth: 960,
-    minHeight: 640,
+    minWidth: 900,
+    minHeight: 600,
     webPreferences: {
+      preload: path.join(__dirname, "preload.cjs"),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: true,
     },
-  })
+  });
 
   if (app.isPackaged) {
-    mainWindow.loadFile(join(__dirname, '..', 'dist', 'index.html'))
+    win.loadFile(path.join(__dirname, "../dist/index.html"));
   } else {
-    mainWindow.loadURL('http://127.0.0.1:5173')
+    win.loadURL("http://127.0.0.1:5173");
   }
 }
 
-app.whenReady().then(() => {
-  createWindow()
+function registerExternalLinkHandler() {
+  ipcMain.handle("app:open-whatsapp", async (_event, target) => {
+    let url;
 
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow()
+    try {
+      url = new URL(target);
+    } catch {
+      throw new Error("Invalid WhatsApp link");
     }
-  })
-}).catch((error) => {
-  console.error('Failed to start the Electron app:', error)
-  app.quit()
-})
 
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit()
+    if (
+      url.protocol !== "https:" ||
+      url.hostname !== "wa.me" ||
+      url.pathname !== "/" ||
+      !url.searchParams.has("text")
+    ) {
+      throw new Error("Only WhatsApp bill-sharing links can be opened");
+    }
+
+    await shell.openExternal(url.toString());
+  });
+}
+
+app.whenReady().then(() => {
+  initializeDatabase();
+  registerProductHandlers();
+  registerExternalLinkHandler();
+  createWindow();
+
+  app.on("activate", () => {
+    if (BrowserWindow.getAllWindows().length === 0) {
+      createWindow();
+    }
+  });
+});
+
+app.on("window-all-closed", () => {
+  if (process.platform !== "darwin") {
+    app.quit();
   }
-})
+});
+
+app.on("will-quit", () => {
+  closeDatabase();
+});
