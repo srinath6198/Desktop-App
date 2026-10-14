@@ -21,6 +21,7 @@ function fromDatabase(product) {
     purchasePrice: product.purchase_price,
     sellingPrice: product.selling_price,
     stock: product.stock,
+    minimumStock: product.minimum_stock ?? 0,
     active: product.active === 1,
     imageDataUrl: product.image_data_url ?? null,
     createdAt: product.created_at,
@@ -40,6 +41,7 @@ function toDatabase(product) {
     purchase_price: product.purchasePrice,
     selling_price: product.sellingPrice,
     stock: product.stock,
+    minimum_stock: product.minimumStock ?? 0,
     image_data_url: product.imageDataUrl ?? null,
     remove_image: product.removeImage ?? false,
   }

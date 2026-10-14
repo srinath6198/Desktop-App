@@ -23,6 +23,30 @@ Products are stored in the local SQLite database. Deactivating a product marks
 it inactive without deleting its row, so historical records remain intact.
 Use the product status filter to view inactive products and reactivate them.
 
+Supplier records are stored in the same database. Add, edit, deactivate, and
+reactivate suppliers from the Suppliers screen; deactivation retains supplier
+records and purchase history.
+
+Customer records support contact details, address, email, Aadhaar number, GST
+number, and a profile photo. Aadhaar numbers are encrypted at rest with the
+operating system's Electron secure-storage integration; profile photos are kept
+under the application's local data directory.
+
+The Customer Credit screen stores credit charges and received payments in a
+SQLite ledger, calculates outstanding balances, prevents payments above the
+current balance, and prints customer-specific or all-customer statements.
+
+The Stock Entry screen lists all products, including inactive records, and
+supports name/code search, category and stock-status filters, minimum-stock
+levels, and paginated results. Adding stock records a stock movement and updates
+the product quantity and minimum-stock level in one SQLite transaction.
+
+Purchases, purchase line items, and supplier returns are stored in SQLite.
+Recording a purchase adds received quantities to product stock and creates stock
+movement entries. Purchase history can be filtered by a date range; returns can
+be partial, are limited to purchased quantities and available stock, and reduce
+inventory while retaining the original purchase and return history.
+
 ## Native SQLite dependency
 
 `better-sqlite3` is a native Node.js module. If no compatible prebuilt binary is

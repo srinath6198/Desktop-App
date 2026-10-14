@@ -10,6 +10,21 @@ const {
 const {
   registerProductHandlers,
 } = require("./ipc/product.ipc.cjs");
+const {
+  registerSupplierHandlers,
+} = require("./ipc/supplier.ipc.cjs");
+const {
+  registerPurchaseHandlers,
+} = require("./ipc/purchase.ipc.cjs");
+const {
+  registerStockHandlers,
+} = require("./ipc/stock.ipc.cjs");
+const {
+  registerCustomerHandlers,
+} = require("./ipc/customer.ipc.cjs");
+const {
+  registerCustomerCreditHandlers,
+} = require("./ipc/customer-credit.ipc.cjs");
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -52,11 +67,32 @@ function registerExternalLinkHandler() {
 
     await shell.openExternal(url.toString());
   });
+
+  ipcMain.handle("app:open-email", async (_event, message) => {
+    if (
+      !message ||
+      typeof message.to !== "string" ||
+      message.to.length > 254 ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(message.to) ||
+      typeof message.subject !== "string" ||
+      typeof message.body !== "string"
+    ) {
+      throw new Error("Valid email details are required");
+    }
+
+    const emailUrl = `mailto:${encodeURIComponent(message.to)}?subject=${encodeURIComponent(message.subject)}&body=${encodeURIComponent(message.body)}`;
+    await shell.openExternal(emailUrl);
+  });
 }
 
 app.whenReady().then(() => {
   initializeDatabase();
   registerProductHandlers();
+  registerSupplierHandlers();
+  registerPurchaseHandlers();
+  registerStockHandlers();
+  registerCustomerHandlers();
+  registerCustomerCreditHandlers();
   registerExternalLinkHandler();
   createWindow();
 

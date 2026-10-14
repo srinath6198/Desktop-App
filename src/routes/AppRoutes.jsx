@@ -9,10 +9,12 @@ import SalesHistory from "../pages/billing/SalesHistory";
 import Products from "../pages/products/Products";
 import Purchases from "../pages/purchases/Purchases";
 import Customers from "../pages/customers/Customers";
+import CustomerCredit from "../pages/customers/CustomerCredit";
 import Suppliers from "../pages/suppliers/Suppliers";
 import Inventory from "../pages/inventory/Inventory";
 import Reports from "../pages/reports/Reports";
 import Settings from "../pages/settings/Settings";
+import StockEntry from "../pages/stock/StockEntery";
 
 function AppRoutes() {
   return (
@@ -26,8 +28,10 @@ function AppRoutes() {
         <Route path="products" element={<Products />} />
         <Route path="purchases" element={<Purchases />} />
         <Route path="customers" element={<Customers />} />
+        <Route path="customers/credit" element={<CustomerCredit />} />
         <Route path="suppliers" element={<Suppliers />} />
         <Route path="inventory" element={<Inventory />} />
+        <Route path="stock-entry" element={<StockEntry />} />
         <Route path="reports" element={<Reports />} />
         <Route path="settings" element={<Settings />} />
 

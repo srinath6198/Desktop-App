@@ -47,13 +47,13 @@ export function Badge({ children, tone = "neutral" }) {
   return <span className={`badge ${tone}`}>{children}</span>
 }
 
-export function Modal({ title, onClose, children }) {
+export function Modal({ title, onClose, children, className = "" }) {
   return (
     <div className="modal-backdrop" onMouseDown={onClose}>
       <section
         aria-label={title}
         aria-modal="true"
-        className="modal-card"
+        className={`modal-card ${className}`.trim()}
         onMouseDown={(event) => event.stopPropagation()}
         role="dialog"
       >

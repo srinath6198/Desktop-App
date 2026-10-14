@@ -97,6 +97,7 @@ function normalizeProduct(product, { requireId = false } = {}) {
   const purchasePrice = Number(product.purchase_price);
   const sellingPrice = Number(product.selling_price);
   const stock = Number(product.stock ?? 0);
+  const minimumStock = Number(product.minimum_stock ?? 0);
 
   if (
     !Number.isFinite(noOfUnits) ||
@@ -104,13 +105,15 @@ function normalizeProduct(product, { requireId = false } = {}) {
     !Number.isFinite(purchasePrice) ||
     !Number.isFinite(sellingPrice) ||
     !Number.isFinite(stock) ||
+    !Number.isFinite(minimumStock) ||
     noOfUnits <= 0 ||
     mrp < 0 ||
     purchasePrice < 0 ||
     sellingPrice < 0 ||
-    stock < 0
+    stock < 0 ||
+    minimumStock < 0
   ) {
-    throw new Error("Enter valid non-negative prices and stock; units per product must be greater than zero");
+    throw new Error("Enter valid non-negative prices, stock, and minimum stock; units per product must be greater than zero");
   }
 
   if (
@@ -144,6 +147,7 @@ function normalizeProduct(product, { requireId = false } = {}) {
     purchasePrice,
     sellingPrice,
     stock,
+    minimumStock,
   };
 }
 
@@ -192,8 +196,8 @@ function registerProductHandlers() {
         .prepare(`
         INSERT INTO products
           (product_code, name, variant, category, unit, no_of_units,
-           mrp, purchase_price, selling_price, stock, active, image_path)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
+           mrp, purchase_price, selling_price, stock, active, image_path, minimum_stock)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
       `)
         .run(
           product.productCode,
@@ -207,6 +211,7 @@ function registerProductHandlers() {
           product.sellingPrice,
           product.stock,
           imageFileName,
+          product.minimumStock,
         );
 
       return getProduct(db, result.lastInsertRowid);
@@ -241,6 +246,7 @@ function registerProductHandlers() {
             purchase_price = ?,
             selling_price = ?,
             stock = ?,
+            minimum_stock = ?,
             image_path = ?
         WHERE id = ?
       `)
@@ -255,6 +261,7 @@ function registerProductHandlers() {
           product.purchasePrice,
           product.sellingPrice,
           product.stock,
+          product.minimumStock,
           imagePath,
           product.id,
         );

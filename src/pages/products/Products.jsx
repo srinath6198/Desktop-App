@@ -15,6 +15,7 @@ const EMPTY_PRODUCT = {
   purchasePrice: 0,
   sellingPrice: 0,
   stock: 0,
+  minimumStock: 0,
 }
 
 function Products() {
@@ -111,6 +112,7 @@ function Products() {
       purchasePrice: Number(form.get("purchasePrice")),
       sellingPrice: Number(form.get("sellingPrice")),
       stock: Number(form.get("stock")),
+      minimumStock: Number(form.get("minimumStock")),
       imageDataUrl: imageChanged ? imageDataUrl : null,
       removeImage: imageChanged && removeImage,
     }
@@ -260,6 +262,7 @@ function Products() {
             <label className="form-field">Unit<select defaultValue={formProduct.unit} name="unit"><option value="kg">Kilogram (kg)</option><option value="gram">Gram</option><option value="piece">Piece</option><option value="bundle">Bundle</option><option value="box">Box</option><option value="length">Length</option></select></label>
             <label className="form-field">Units per product<input defaultValue={formProduct.noOfUnits} min="0.01" name="noOfUnits" required step="any" type="number" /></label>
             <label className="form-field">Opening stock<input defaultValue={formProduct.stock} min="0" name="stock" required step="any" type="number" /></label>
+            <label className="form-field">Minimum stock<input defaultValue={formProduct.minimumStock} min="0" name="minimumStock" required step="any" type="number" /></label>
             <label className="form-field">MRP (₹)<input defaultValue={formProduct.mrp} min="0" name="mrp" required step="0.01" type="number" /></label>
             <label className="form-field">Purchase price (₹)<input defaultValue={formProduct.purchasePrice} min="0" name="purchasePrice" required step="0.01" type="number" /></label>
             <label className="form-field">Selling price (₹)<input defaultValue={formProduct.sellingPrice} min="0" name="sellingPrice" required step="0.01" type="number" /></label>
