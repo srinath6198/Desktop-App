@@ -41,6 +41,12 @@ supports name/code search, category and stock-status filters, minimum-stock
 levels, and paginated results. Adding stock records a stock movement and updates
 the product quantity and minimum-stock level in one SQLite transaction.
 
+The Inventory screen reads product quantities and stock movements from SQLite.
+It shows active and low-stock product counts, monthly movement totals, filtered
+and paginated stock levels, and recent purchases, purchase returns, and manual
+adjustments. Manual adjustments can add or remove stock and cannot reduce a
+product below zero. Sales are not yet connected to inventory movements.
+
 Purchases, purchase line items, and supplier returns are stored in SQLite.
 Recording a purchase adds received quantities to product stock and creates stock
 movement entries. Purchase history can be filtered by a date range; returns can

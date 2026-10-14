@@ -31,7 +31,9 @@ contextBridge.exposeInMainWorld("desktopAPI", {
   },
 
   stock: {
+    inventoryReport: () => ipcRenderer.invoke("stock:inventory-report"),
     add: (entry) => ipcRenderer.invoke("stock:add", entry),
+    adjust: (adjustment) => ipcRenderer.invoke("stock:adjust", adjustment),
   },
 
   customers: {

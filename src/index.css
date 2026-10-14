@@ -537,6 +537,18 @@ td strong {
   gap: 9px;
 }
 
+.table-product > div:last-child {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.table-product small {
+  color: #87919c;
+  font-size: 10px;
+}
+
 .table-product .flower-avatar,
 .person-avatar {
   width: 31px;
@@ -832,6 +844,22 @@ td strong {
   flex-wrap: wrap;
   gap: 10px;
   margin: 0 20px;
+}
+
+.inventory-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0 20px 14px;
+}
+
+.inventory-toolbar .field-search {
+  flex: 1 1 240px;
+}
+
+.inventory-toolbar .select-control {
+  min-width: 155px;
 }
 
 .credit-toolbar {
@@ -1478,6 +1506,11 @@ td strong {
   font-weight: 700;
 }
 
+.negative-quantity {
+  color: #c44f4f;
+  font-weight: 700;
+}
+
 .movement-panel {
   margin-top: 0;
 }
@@ -1987,6 +2020,12 @@ td strong {
     padding-block: 12px;
   }
 
+  .inventory-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+    margin-inline: 14px;
+  }
+
   .screen-title-action .stock-report-actions {
     width: 100%;
   }
@@ -1998,6 +2037,10 @@ td strong {
   }
 
   .stock-entry-toolbar .select-control {
+    width: 100%;
+  }
+
+  .inventory-toolbar .select-control {
     width: 100%;
   }
 
