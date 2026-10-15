@@ -1,6 +1,6 @@
 const { ipcMain } = require("electron");
-const { randomUUID } = require("node:crypto");
 const { getDatabase } = require("../database/connection.cjs");
+const { getAppSettings } = require("../database/settings.cjs");
 
 const PAYMENT_METHODS = new Set(["Cash", "UPI", "Card", "Credit / due"]);
 
@@ -40,8 +40,10 @@ function normalizeSale(input) {
 
 function getSale(db, saleId) {
   const sale = db.prepare(`
-    SELECT s.id, s.invoice_number, s.customer_id, COALESCE(c.name, 'Walk-in customer') AS customer_name,
-           s.subtotal, s.tax, s.total, s.payment_method, s.amount_paid, s.payment_status, s.created_at
+    SELECT s.id, s.invoice_number, s.customer_id,
+           COALESCE(c.name, 'Walk-in customer') AS customer_name, c.phone AS customer_phone,
+           s.subtotal, s.tax, s.tax_rate, s.show_tax, s.total, s.payment_method,
+           s.amount_paid, s.payment_status, s.created_at
     FROM sales s
     LEFT JOIN customers c ON c.id = s.customer_id
     WHERE s.id = ?
@@ -53,7 +55,7 @@ function getSale(db, saleId) {
     WHERE sale_id = ?
     ORDER BY id
   `).all(saleId);
-  return { ...sale, items };
+  return { ...sale, items, settings: getAppSettings(db) };
 }
 
 function registerSaleHandlers() {
@@ -69,6 +71,13 @@ function registerSaleHandlers() {
       LEFT JOIN customers c ON c.id = s.customer_id
       ORDER BY s.id DESC
     `).all();
+  });
+
+  ipcMain.handle("sales:get", (_event, saleId) => {
+    if (!Number.isInteger(saleId) || saleId <= 0) {
+      throw new Error("Choose a valid invoice");
+    }
+    return getSale(getDatabase(), saleId);
   });
 
   ipcMain.handle("sales:create", (_event, input) => {
@@ -93,21 +102,29 @@ function registerSaleHandlers() {
         const subtotal = Math.round(item.quantity * product.selling_price * 100) / 100;
         return { ...item, product, subtotal };
       });
+      const settings = getAppSettings(db);
       const subtotal = Math.round(saleItems.reduce((sum, item) => sum + item.subtotal, 0) * 100) / 100;
-      const tax = Math.round(subtotal * 0.05);
+      const tax = Math.round(subtotal * settings.taxRate / 100 * 100) / 100;
       const total = Math.round((subtotal + tax) * 100) / 100;
       const amountPaid = sale.paymentMethod === "Credit / due" ? 0 : total;
       const paymentStatus = amountPaid >= total ? "paid" : "due";
-      const invoiceNumber = `INV-${Date.now()}-${randomUUID().slice(0, 6).toUpperCase()}`;
+      let sequence = (db.prepare("SELECT COALESCE(MAX(seq), 0) AS value FROM sqlite_sequence WHERE name = 'sales'").get().value || 0) + 1;
+      let invoiceNumber;
+      do {
+        invoiceNumber = `${settings.shortName}-${String(sequence).padStart(4, "0")}`;
+        sequence += 1;
+      } while (db.prepare("SELECT 1 FROM sales WHERE invoice_number = ?").get(invoiceNumber));
       const saleResult = db.prepare(`
         INSERT INTO sales
-          (invoice_number, customer_id, subtotal, tax, total, payment_method, amount_paid, payment_status)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+          (invoice_number, customer_id, subtotal, tax, tax_rate, show_tax, total, payment_method, amount_paid, payment_status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
         invoiceNumber,
         sale.customerId,
         subtotal,
         tax,
+        settings.taxRate,
+        settings.showTax ? 1 : 0,
         total,
         sale.paymentMethod,
         amountPaid,

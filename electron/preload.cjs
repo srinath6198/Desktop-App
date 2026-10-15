@@ -3,6 +3,8 @@ const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("desktopAPI", {
   getPlatform: () => process.platform,
+  print: () => ipcRenderer.invoke("app:print"),
+  saveBillPdf: (bill) => ipcRenderer.invoke("app:save-bill-pdf", bill),
   openExternal: (url) => ipcRenderer.invoke("app:open-whatsapp", url),
   openEmail: (to, subject, body) => ipcRenderer.invoke("app:open-email", { to, subject, body }),
 
@@ -11,6 +13,8 @@ contextBridge.exposeInMainWorld("desktopAPI", {
     selectImage: () => ipcRenderer.invoke("products:select-image"),
     create: (product) =>
       ipcRenderer.invoke("products:create", product),
+    createMany: (products) =>
+      ipcRenderer.invoke("products:create-many", products),
     update: (product) =>
       ipcRenderer.invoke("products:update", product),
     setActive: (id, active) =>
@@ -50,6 +54,17 @@ contextBridge.exposeInMainWorld("desktopAPI", {
 
   sales: {
     list: () => ipcRenderer.invoke("sales:list"),
+    get: (saleId) => ipcRenderer.invoke("sales:get", saleId),
     create: (sale) => ipcRenderer.invoke("sales:create", sale),
+  },
+
+  dashboard: {
+    summary: (period) => ipcRenderer.invoke("dashboard:summary", period),
+  },
+
+  settings: {
+    get: () => ipcRenderer.invoke("settings:get"),
+    save: (settings) => ipcRenderer.invoke("settings:save", settings),
+    selectLogo: () => ipcRenderer.invoke("settings:select-logo"),
   },
 });

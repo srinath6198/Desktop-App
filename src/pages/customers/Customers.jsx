@@ -1,17 +1,8 @@
 import { useEffect, useMemo, useState } from "react"
-import { ImagePlus, Pencil, Plus, Search, Users, X } from "lucide-react"
-import { Modal, PageTitle, Panel, StatCard } from "../../components/ui/PageUI"
+import { Pencil, Plus, Search, Users } from "lucide-react"
+import { PageTitle, Panel, StatCard } from "../../components/ui/PageUI"
+import AddCustomer from "./AddCustomer"
 import { customerService } from "../../services/customer.service"
-
-const EMPTY_CUSTOMER = {
-  name: "",
-  phone: "",
-  email: "",
-  address: "",
-  aadhaarNumber: "",
-  gstNumber: "",
-  profileImageDataUrl: null,
-}
 
 function formatDate(value) {
   if (!value) return "—"
@@ -31,12 +22,8 @@ function Customers() {
   const [message, setMessage] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [editingCustomer, setEditingCustomer] = useState(null)
-  const [profileImageDataUrl, setProfileImageDataUrl] = useState(null)
-  const [profileImageChanged, setProfileImageChanged] = useState(false)
-  const [removeProfileImage, setRemoveProfileImage] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -71,76 +58,32 @@ function Customers() {
     return created.getFullYear() === currentMonth.year && created.getMonth() === currentMonth.month
   }).length
   const customersWithGst = customers.filter((customer) => customer.gstNumber).length
-  const formCustomer = editingCustomer ?? EMPTY_CUSTOMER
 
   function openCreateForm() {
     setEditingCustomer(null)
-    setProfileImageDataUrl(null)
-    setProfileImageChanged(false)
-    setRemoveProfileImage(false)
     setError("")
     setShowForm(true)
   }
 
   function openEditForm(customer) {
     setEditingCustomer(customer)
-    setProfileImageDataUrl(customer.profileImageDataUrl)
-    setProfileImageChanged(false)
-    setRemoveProfileImage(false)
     setError("")
     setShowForm(true)
   }
 
-  async function chooseProfileImage() {
-    setError("")
-    try {
-      const image = await customerService.selectProfileImage()
-      if (image) {
-        setProfileImageDataUrl(image)
-        setProfileImageChanged(true)
-        setRemoveProfileImage(false)
-      }
-    } catch (imageError) {
-      setError(imageError.message || "Unable to select the customer profile image.")
-    }
-  }
-
-  async function saveCustomer(event) {
-    event.preventDefault()
-    setSaving(true)
-    setError("")
+  async function saveCustomer(customer) {
     setMessage("")
-    const form = new FormData(event.currentTarget)
-    const customer = {
-      id: editingCustomer?.id,
-      name: String(form.get("name")).trim(),
-      phone: String(form.get("phone")).trim(),
-      email: String(form.get("email")).trim(),
-      address: String(form.get("address")).trim(),
-      aadhaarNumber: String(form.get("aadhaarNumber")).replace(/[\s-]/g, ""),
-      gstNumber: String(form.get("gstNumber")).trim().toUpperCase(),
-      profileImageDataUrl: profileImageChanged ? profileImageDataUrl : null,
-      removeProfileImage: profileImageChanged && removeProfileImage,
-    }
-
-    try {
-      const saved = editingCustomer
-        ? await customerService.update(customer)
-        : await customerService.create(customer)
-      setCustomers((current) => {
-        const exists = current.some((item) => item.id === saved.id)
-        return exists
-          ? current.map((item) => item.id === saved.id ? saved : item)
-          : [...current, saved].sort((left, right) => left.name.localeCompare(right.name))
-      })
-      setMessage(`${saved.name} ${editingCustomer ? "updated" : "added"} successfully.`)
-      setShowForm(false)
-      setEditingCustomer(null)
-    } catch (saveError) {
-      setError(saveError.message || "Unable to save the customer.")
-    } finally {
-      setSaving(false)
-    }
+    const saved = editingCustomer
+      ? await customerService.update(customer)
+      : await customerService.create(customer)
+    setCustomers((current) => {
+      const exists = current.some((item) => item.id === saved.id)
+      return exists
+        ? current.map((item) => item.id === saved.id ? saved : item)
+        : [...current, saved].sort((left, right) => left.name.localeCompare(right.name))
+    })
+    setMessage(`${saved.name} ${editingCustomer ? "updated" : "added"} successfully.`)
+    setEditingCustomer(null)
   }
 
   return (
@@ -195,36 +138,11 @@ function Customers() {
       </Panel>
 
       {showForm && (
-        <Modal onClose={() => !saving && setShowForm(false)} title={editingCustomer ? "Edit customer" : "Add a customer"}>
-          <form className="form-grid" onSubmit={saveCustomer}>
-            {error && <p className="error-banner span-2" role="alert">{error}</p>}
-            <div className="form-field span-2">
-              <span>Customer profile photo</span>
-              <div className="customer-profile-editor">
-                {profileImageDataUrl
-                  ? <img alt="Customer profile preview" className="customer-profile-preview" src={profileImageDataUrl} />
-                  : <div className="customer-profile-placeholder"><Users size={22} /><span>No photo selected</span></div>}
-                <div className="product-image-controls">
-                  <button className="button button-secondary" onClick={chooseProfileImage} type="button"><ImagePlus size={16} /> Choose photo</button>
-                  {profileImageDataUrl && (
-                    <button className="button button-secondary" onClick={() => { setProfileImageDataUrl(null); setProfileImageChanged(true); setRemoveProfileImage(true) }} type="button"><X size={15} /> Remove photo</button>
-                  )}
-                  <small>JPG, PNG or WebP · maximum 5 MB</small>
-                </div>
-              </div>
-            </div>
-            <label className="form-field span-2">Full name<input autoFocus defaultValue={formCustomer.name} name="name" placeholder="Customer name" required /></label>
-            <label className="form-field">Phone number<input defaultValue={formCustomer.phone} name="phone" placeholder="+91 98765 43210" type="tel" /></label>
-            <label className="form-field">Email address<input defaultValue={formCustomer.email} name="email" placeholder="customer@example.com" type="email" /></label>
-            <label className="form-field span-2">Address<textarea defaultValue={formCustomer.address} name="address" placeholder="Street, area, city, state and PIN code" rows="2" /></label>
-            <label className="form-field">Aadhaar number<input autoComplete="off" defaultValue={formCustomer.aadhaarNumber} inputMode="numeric" maxLength="14" name="aadhaarNumber" placeholder="12 digits" /></label>
-            <label className="form-field">GST number<input autoComplete="off" defaultValue={formCustomer.gstNumber} maxLength="15" name="gstNumber" placeholder="15-character GSTIN" /></label>
-            <div className="form-actions span-2">
-              <button className="button button-secondary" disabled={saving} onClick={() => setShowForm(false)} type="button">Cancel</button>
-              <button className="button button-primary" disabled={saving} type="submit">{saving ? "Saving…" : editingCustomer ? "Save changes" : "Add customer"}</button>
-            </div>
-          </form>
-        </Modal>
+        <AddCustomer
+          customer={editingCustomer}
+          onClose={() => setShowForm(false)}
+          onSave={saveCustomer}
+        />
       )}
     </div>
   )

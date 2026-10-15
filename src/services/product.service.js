@@ -47,6 +47,23 @@ function toDatabase(product) {
   }
 }
 
+async function createProductsOneByOne(api, databaseProducts) {
+  const rows = []
+  for (const product of databaseProducts) {
+    try {
+      rows.push(await api.create(product))
+    } catch (error) {
+      if (rows.length) {
+        throw new Error(
+          `Created ${rows.length} of ${databaseProducts.length} variants before an error: ${error.message || "Unable to save a product variant."}`,
+        )
+      }
+      throw error
+    }
+  }
+  return rows.map(fromDatabase)
+}
+
 export const productService = {
   async list() {
     const rows = await getProductsApi().list()
@@ -59,6 +76,25 @@ export const productService = {
 
   async create(product) {
     return fromDatabase(await getProductsApi().create(toDatabase(product)))
+  },
+
+  async createMany(products) {
+    const api = getProductsApi()
+    const databaseProducts = products.map(toDatabase)
+    if (typeof api.createMany !== "function") {
+      return createProductsOneByOne(api, databaseProducts)
+    }
+
+    try {
+      const rows = await api.createMany(databaseProducts)
+      return rows.map(fromDatabase)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      if (/No handler registered for ['"]products:create-many['"]/.test(message)) {
+        return createProductsOneByOne(api, databaseProducts)
+      }
+      throw error
+    }
   },
 
   async update(product) {

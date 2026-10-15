@@ -11,6 +11,10 @@ export const salesService = {
     return getSalesApi().list()
   },
 
+  get(saleId) {
+    return getSalesApi().get(Number(saleId))
+  },
+
   create({ customerId, paymentMethod, items }) {
     return getSalesApi().create({
       customerId: customerId == null ? null : Number(customerId),

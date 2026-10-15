@@ -18,6 +18,33 @@ const EMPTY_PRODUCT = {
   minimumStock: 0,
 }
 
+function ProductVariantFields({ prefix, variant = {} }) {
+  return (
+    <div className="form-grid">
+      <label className="form-field">
+        Variant name
+        <input defaultValue={variant.variant ?? ""} maxLength="100" name={`${prefix}-variant`} placeholder="e.g. 50 cm, Small, Premium" required />
+      </label>
+      <label className="form-field">
+        Product code
+        <input defaultValue={variant.productCode ?? ""} maxLength="100" name={`${prefix}-productCode`} placeholder="Optional, unique per variant" />
+      </label>
+      <label className="form-field">
+        Unit
+        <select defaultValue={variant.unit ?? "piece"} name={`${prefix}-unit`}>
+          <option value="kg">Kilogram (kg)</option><option value="gram">Gram</option><option value="piece">Piece</option><option value="bundle">Bundle</option><option value="box">Box</option><option value="length">Length</option>
+        </select>
+      </label>
+      <label className="form-field">Units per product<input defaultValue={variant.noOfUnits ?? 1} min="0.01" name={`${prefix}-noOfUnits`} required step="any" type="number" /></label>
+      <label className="form-field">Opening stock<input defaultValue={variant.stock ?? 0} min="0" name={`${prefix}-stock`} required step="any" type="number" /></label>
+      <label className="form-field">Minimum stock<input defaultValue={variant.minimumStock ?? 0} min="0" name={`${prefix}-minimumStock`} required step="any" type="number" /></label>
+      <label className="form-field">MRP (₹)<input defaultValue={variant.mrp ?? 0} min="0" name={`${prefix}-mrp`} required step="0.01" type="number" /></label>
+      <label className="form-field">Purchase price (₹)<input defaultValue={variant.purchasePrice ?? 0} min="0" name={`${prefix}-purchasePrice`} required step="0.01" type="number" /></label>
+      <label className="form-field">Selling price (₹)<input defaultValue={variant.sellingPrice ?? 0} min="0" name={`${prefix}-sellingPrice`} required step="0.01" type="number" /></label>
+    </div>
+  )
+}
+
 function Products() {
   const [products, setProducts] = useState([])
   const [query, setQuery] = useState("")
@@ -26,6 +53,7 @@ function Products() {
   const [imageDataUrl, setImageDataUrl] = useState(null)
   const [imageChanged, setImageChanged] = useState(false)
   const [removeImage, setRemoveImage] = useState(false)
+  const [variantRows, setVariantRows] = useState([0])
   const [showForm, setShowForm] = useState(false)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -52,17 +80,36 @@ function Products() {
     }
   }, [])
 
-  const filteredProducts = useMemo(() => {
+  const productGroups = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase()
-    return products.filter((product) =>
-      (statusFilter === "all" || product.active === (statusFilter === "active")) &&
-      [product.name, product.variant, product.category, product.productCode]
-        .some((value) => value?.toLowerCase().includes(normalizedQuery)),
-    )
+    const groups = new Map()
+    products.forEach((product) => {
+      const key = product.name.trim().toLocaleLowerCase()
+      const group = groups.get(key) ?? { key, name: product.name, variants: [] }
+      group.variants.push(product)
+      groups.set(key, group)
+    })
+    return [...groups.values()]
+      .map((group) => {
+        const variants = group.variants.sort((left, right) => left.variant.localeCompare(right.variant))
+        return { ...variants[0], ...group, variants }
+      })
+      .filter((group) => {
+        const matchesStatus = group.variants.some((product) =>
+          statusFilter === "all" || product.active === (statusFilter === "active"),
+        )
+        const matchesQuery = group.variants.some((product) =>
+          [product.name, product.variant, product.category, product.productCode]
+            .some((value) => value?.toLowerCase().includes(normalizedQuery)),
+        )
+        return matchesStatus && matchesQuery
+      })
+      .sort((left, right) => left.name.localeCompare(right.name))
   }, [products, query, statusFilter])
 
   function openCreateForm() {
     setEditingProduct(null)
+    setVariantRows([0])
     setImageDataUrl(null)
     setImageChanged(false)
     setRemoveImage(false)
@@ -70,9 +117,10 @@ function Products() {
     setShowForm(true)
   }
 
-  function openEditForm(product) {
-    setEditingProduct(product)
-    setImageDataUrl(product.imageDataUrl)
+  function openEditForm(productGroup) {
+    setEditingProduct(productGroup)
+    setVariantRows([])
+    setImageDataUrl(productGroup.variants[0]?.imageDataUrl ?? null)
     setImageChanged(false)
     setRemoveImage(false)
     setError("")
@@ -101,60 +149,125 @@ function Products() {
 
     const form = new FormData(event.currentTarget)
     const product = {
-      id: editingProduct?.id,
-      productCode: String(form.get("productCode")).trim(),
       name: String(form.get("name")).trim(),
-      variant: String(form.get("variant")).trim(),
       category: String(form.get("category")).trim(),
-      unit: String(form.get("unit")),
-      noOfUnits: Number(form.get("noOfUnits")),
-      mrp: Number(form.get("mrp")),
-      purchasePrice: Number(form.get("purchasePrice")),
-      sellingPrice: Number(form.get("sellingPrice")),
-      stock: Number(form.get("stock")),
-      minimumStock: Number(form.get("minimumStock")),
       imageDataUrl: imageChanged ? imageDataUrl : null,
       removeImage: imageChanged && removeImage,
     }
 
     try {
-      const savedProduct = editingProduct
-        ? await productService.update(product)
-        : await productService.create(product)
+      let savedProducts
+      if (editingProduct) {
+        const updatedVariants = []
+        for (const variant of editingProduct.variants) {
+          const prefix = `existing-${variant.id}`
+          updatedVariants.push(await productService.update({
+            ...variant,
+            ...product,
+            id: variant.id,
+            productCode: String(form.get(`${prefix}-productCode`)).trim(),
+            variant: String(form.get(`${prefix}-variant`)).trim(),
+            unit: String(form.get(`${prefix}-unit`)),
+            noOfUnits: Number(form.get(`${prefix}-noOfUnits`)),
+            mrp: Number(form.get(`${prefix}-mrp`)),
+            purchasePrice: Number(form.get(`${prefix}-purchasePrice`)),
+            sellingPrice: Number(form.get(`${prefix}-sellingPrice`)),
+            stock: Number(form.get(`${prefix}-stock`)),
+            minimumStock: Number(form.get(`${prefix}-minimumStock`)),
+          }))
+        }
+        const addedVariants = variantRows.map((row) => ({
+          ...product,
+          productCode: String(form.get(`new-${row}-productCode`)).trim(),
+          variant: String(form.get(`new-${row}-variant`)).trim(),
+          unit: String(form.get(`new-${row}-unit`)),
+          noOfUnits: Number(form.get(`new-${row}-noOfUnits`)),
+          mrp: Number(form.get(`new-${row}-mrp`)),
+          purchasePrice: Number(form.get(`new-${row}-purchasePrice`)),
+          sellingPrice: Number(form.get(`new-${row}-sellingPrice`)),
+          stock: Number(form.get(`new-${row}-stock`)),
+          minimumStock: Number(form.get(`new-${row}-minimumStock`)),
+          imageDataUrl,
+        }))
+        const createdVariants = addedVariants.length > 1
+          ? await productService.createMany(addedVariants)
+          : addedVariants.length === 1
+            ? [await productService.create(addedVariants[0])]
+            : []
+        savedProducts = [...updatedVariants, ...createdVariants]
+      } else {
+        const variants = variantRows.map((row) => ({
+          ...product,
+          productCode: String(form.get(`new-${row}-productCode`)).trim(),
+          variant: String(form.get(`new-${row}-variant`)).trim(),
+          unit: String(form.get(`new-${row}-unit`)),
+          noOfUnits: Number(form.get(`new-${row}-noOfUnits`)),
+          mrp: Number(form.get(`new-${row}-mrp`)),
+          purchasePrice: Number(form.get(`new-${row}-purchasePrice`)),
+          sellingPrice: Number(form.get(`new-${row}-sellingPrice`)),
+          stock: Number(form.get(`new-${row}-stock`)),
+          minimumStock: Number(form.get(`new-${row}-minimumStock`)),
+          imageDataUrl,
+        }))
+        savedProducts = variants.length > 1
+          ? await productService.createMany(variants)
+          : [await productService.create(variants[0])]
+      }
       setProducts((current) => {
-        const exists = current.some((item) => item.id === savedProduct.id)
-        return exists
-          ? current.map((item) => item.id === savedProduct.id ? savedProduct : item)
-          : [...current, savedProduct].sort((left, right) =>
-            left.name.localeCompare(right.name) || left.variant.localeCompare(right.variant),
-          )
+        const next = [...current]
+        for (const savedProduct of savedProducts) {
+          const exists = next.some((item) => item.id === savedProduct.id)
+          if (exists) {
+            const index = next.findIndex((item) => item.id === savedProduct.id)
+            next[index] = savedProduct
+          } else {
+            next.push(savedProduct)
+          }
+        }
+        return next.sort((left, right) =>
+          left.name.localeCompare(right.name) || left.variant.localeCompare(right.variant),
+        )
       })
-      setSavedMessage(`${savedProduct.name}${savedProduct.variant ? ` (${savedProduct.variant})` : ""} ${editingProduct ? "updated" : "added"}.`)
+      setSavedMessage(editingProduct
+        ? `${savedProducts[0].name} updated${savedProducts.length > 1 ? `; added ${savedProducts.length - 1} variant${savedProducts.length === 2 ? "" : "s"}` : ""}.`
+        : `${savedProducts.length} ${savedProducts.length === 1 ? "product variant" : "product variants"} added for ${product.name}.`)
       setShowForm(false)
       setEditingProduct(null)
     } catch (saveError) {
       setError(saveError.message || "Unable to save this product.")
+      try {
+        setProducts(await productService.list())
+      } catch (refreshError) {
+        setError(`${saveError.message || "Unable to save this product."} Also unable to refresh the product list: ${refreshError.message || "Unknown error."}`)
+      }
     } finally {
       setSaving(false)
     }
   }
 
   async function changeProductStatus(product) {
-    const nextActive = !product.active
-    const label = `${product.name}${product.variant ? ` (${product.variant})` : ""}`
+    const nextActive = product.variants.some((variant) => !variant.active)
+    const label = product.name
     const action = nextActive ? "reactivate" : "deactivate"
     const confirmation = nextActive
-      ? `Reactivate ${label}? It will be available for new sales again.`
-      : `Deactivate ${label}? The product record and its sales history will be kept.`
+      ? `Reactivate all ${product.variants.length} variants of ${label}?`
+      : `Deactivate all ${product.variants.length} variants of ${label}? Product records and sales history will be kept.`
     if (!window.confirm(confirmation)) return
 
     setError("")
     setSavedMessage("")
-    setUpdatingStatusId(product.id)
+    setUpdatingStatusId(product.key)
     try {
-      const updatedProduct = await productService.setActive(product.id, nextActive)
-      setProducts((current) => current.map((item) => item.id === updatedProduct.id ? updatedProduct : item))
-      setSavedMessage(`${label} ${action}d. Its database record has been kept.`)
+      const updatedProducts = []
+      for (const variant of product.variants) {
+        if (variant.active !== nextActive) {
+          updatedProducts.push(await productService.setActive(variant.id, nextActive))
+        }
+      }
+      setProducts((current) => current.map((item) =>
+        updatedProducts.find((updated) => updated.id === item.id) ?? item,
+      ))
+      setSavedMessage(`${label} variants ${action}d. Product records and sales history have been kept.`)
     } catch (statusError) {
       setError(statusError.message || `Unable to ${action} this product.`)
     } finally {
@@ -163,6 +276,12 @@ function Products() {
   }
 
   const formProduct = editingProduct ?? EMPTY_PRODUCT
+  const existingVariantCount = editingProduct?.variants.length ?? 0
+  const maxAdditionalVariants = Math.max(0, 4 - existingVariantCount)
+  const activeProductNames = new Set(products.filter((product) => product.active).map((product) => product.name.trim().toLocaleLowerCase()))
+  const allProductNames = new Set(products.map((product) => product.name.trim().toLocaleLowerCase()))
+  const activeProductCount = activeProductNames.size
+  const inactiveProductCount = [...allProductNames].filter((name) => !activeProductNames.has(name)).length
 
   return (
     <div className="screen">
@@ -173,8 +292,8 @@ function Products() {
       />
 
       <div className="stat-grid compact-stat-grid">
-        <StatCard icon={Flower2} label="Active products" value={products.filter((product) => product.active).length} note="Available for new sales" />
-        <StatCard icon={Flower2} label="Inactive products" value={products.filter((product) => !product.active).length} note="Records retained" tone="orange" />
+        <StatCard icon={Flower2} label="Active products" value={activeProductCount} note="Products available for new sales" />
+        <StatCard icon={Flower2} label="Inactive products" value={inactiveProductCount} note="Product records retained" tone="orange" />
         <StatCard icon={Flower2} label="Categories" value={new Set(products.map((product) => product.category).filter(Boolean)).size} note="Flower varieties" tone="purple" />
         <StatCard icon={Flower2} label="Low stock items" value={products.filter((product) => product.stock < 10).length} note="Need restocking" tone="red" />
       </div>
@@ -187,7 +306,7 @@ function Products() {
             <option value="inactive">Inactive products</option>
             <option value="all">All products</option>
           </select>
-          <span className="results-count">{filteredProducts.length} products</span>
+          <span className="results-count">{productGroups.length} products · {products.length} variants</span>
         </div>
         {error && !showForm && <p className="error-banner product-error" role="alert">{error}</p>}
         {savedMessage && <p className="inline-success" role="status">{savedMessage}</p>}
@@ -195,40 +314,51 @@ function Products() {
           <table>
             <thead><tr><th>Product</th><th>Category</th><th>Unit</th><th>Purchase price</th><th>Selling price</th><th>Stock</th><th>Status</th><th>Actions</th></tr></thead>
             <tbody>
-              {filteredProducts.map((product) => (
-                <tr className={product.active ? "" : "inactive-product-row"} key={product.id}>
+              {productGroups.map((product) => {
+                const activeCount = product.variants.filter((variant) => variant.active).length
+                const allActive = activeCount === product.variants.length
+                const allInactive = activeCount === 0
+                return (
+                <tr className={allInactive ? "inactive-product-row" : ""} key={product.key}>
                   <td>
                     <div className="table-product">
                       {product.imageDataUrl
                         ? <img alt="" className="product-thumbnail" src={product.imageDataUrl} />
                         : <div className="flower-avatar">{product.name.slice(0, 1)}</div>}
-                      <div className="product-name-cell"><strong>{product.name}</strong>{product.variant && <span>{product.variant}</span>}</div>
+                      <div className="product-name-cell">
+                        <strong>{product.name}</strong>
+                        {product.variants.map((variant) => (
+                          <span className="product-variant-summary" key={variant.id}>
+                            {variant.variant || "Standard"} · {variant.noOfUnits > 1 ? `${variant.noOfUnits} ` : ""}{variant.unit}
+                          </span>
+                        ))}
+                      </div>
                     </div>
                   </td>
                   <td>{product.category || "—"}</td>
-                  <td>{product.noOfUnits > 1 ? `${product.noOfUnits} ` : ""}{product.unit}</td>
-                  <td>{formatCurrency(product.purchasePrice)}</td>
-                  <td className="amount-cell">{formatCurrency(product.sellingPrice)}</td>
-                  <td><Badge tone={product.stock < 10 ? "warning" : "success"}>{product.stock} {product.unit}</Badge></td>
-                  <td><Badge tone={product.active ? "success" : "neutral"}>{product.active ? "Active" : "Inactive"}</Badge></td>
+                  <td><div className="product-variant-values">{product.variants.map((variant) => <span key={variant.id}>{variant.noOfUnits > 1 ? `${variant.noOfUnits} ` : ""}{variant.unit}</span>)}</div></td>
+                  <td><div className="product-variant-values">{product.variants.map((variant) => <span key={variant.id}>{formatCurrency(variant.purchasePrice)}</span>)}</div></td>
+                  <td className="amount-cell"><div className="product-variant-values">{product.variants.map((variant) => <span key={variant.id}>{formatCurrency(variant.sellingPrice)}</span>)}</div></td>
+                  <td><div className="product-variant-values">{product.variants.map((variant) => <Badge key={variant.id} tone={variant.stock < 10 ? "warning" : "success"}>{variant.stock} {variant.unit}</Badge>)}</div></td>
+                  <td><Badge tone={allActive ? "success" : allInactive ? "neutral" : "warning"}>{allActive ? "Active" : allInactive ? "Inactive" : `${activeCount}/${product.variants.length} active`}</Badge></td>
                   <td>
                     <div className="product-row-actions">
-                      <button aria-label={`Edit ${product.name}${product.variant ? ` ${product.variant}` : ""}`} className="icon-button" onClick={() => openEditForm(product)} type="button"><Pencil size={15} /></button>
+                      <button aria-label={`Edit ${product.name} and its variants`} className="icon-button" onClick={() => openEditForm(product)} type="button"><Pencil size={15} /></button>
                       <button
-                        aria-label={`${product.active ? "Deactivate" : "Reactivate"} ${product.name}${product.variant ? ` ${product.variant}` : ""}`}
-                        className={`icon-button ${product.active ? "danger-icon" : "activate-icon"}`}
-                        disabled={updatingStatusId === product.id}
+                        aria-label={`${allActive ? "Deactivate" : "Reactivate"} all ${product.name} variants`}
+                        className={`icon-button ${allActive ? "danger-icon" : "activate-icon"}`}
+                        disabled={updatingStatusId === product.key}
                         onClick={() => changeProductStatus(product)}
-                        title={product.active ? "Deactivate product" : "Reactivate product"}
+                        title={allActive ? "Deactivate all variants" : "Reactivate all variants"}
                         type="button"
                       >
-                        {product.active ? <Archive size={16} /> : <RotateCcw size={16} />}
+                        {allActive ? <Archive size={16} /> : <RotateCcw size={16} />}
                       </button>
                     </div>
                   </td>
                 </tr>
-              ))}
-              {!loading && filteredProducts.length === 0 && (
+              )})}
+              {!loading && productGroups.length === 0 && (
                 <tr><td className="empty-table" colSpan="8">{query ? "No products match your search." : statusFilter === "inactive" ? "No inactive products." : "No products yet. Add a product to get started."}</td></tr>
               )}
               {loading && <tr><td className="empty-table" colSpan="8">Loading products from the local database…</td></tr>}
@@ -255,17 +385,74 @@ function Products() {
                 </div>
               </div>
             </div>
-            <label className="form-field">Product code<input defaultValue={formProduct.productCode} name="productCode" placeholder="Optional" /></label>
             <label className="form-field">Flower name<input autoFocus defaultValue={formProduct.name} name="name" placeholder="e.g. Yellow Tulip" required /></label>
-            <label className="form-field">Variant<input defaultValue={formProduct.variant} name="variant" placeholder="e.g. Premium" /></label>
             <label className="form-field">Category<input defaultValue={formProduct.category} name="category" placeholder="e.g. Seasonal" /></label>
-            <label className="form-field">Unit<select defaultValue={formProduct.unit} name="unit"><option value="kg">Kilogram (kg)</option><option value="gram">Gram</option><option value="piece">Piece</option><option value="bundle">Bundle</option><option value="box">Box</option><option value="length">Length</option></select></label>
-            <label className="form-field">Units per product<input defaultValue={formProduct.noOfUnits} min="0.01" name="noOfUnits" required step="any" type="number" /></label>
-            <label className="form-field">Opening stock<input defaultValue={formProduct.stock} min="0" name="stock" required step="any" type="number" /></label>
-            <label className="form-field">Minimum stock<input defaultValue={formProduct.minimumStock} min="0" name="minimumStock" required step="any" type="number" /></label>
-            <label className="form-field">MRP (₹)<input defaultValue={formProduct.mrp} min="0" name="mrp" required step="0.01" type="number" /></label>
-            <label className="form-field">Purchase price (₹)<input defaultValue={formProduct.purchasePrice} min="0" name="purchasePrice" required step="0.01" type="number" /></label>
-            <label className="form-field">Selling price (₹)<input defaultValue={formProduct.sellingPrice} min="0" name="sellingPrice" required step="0.01" type="number" /></label>
+            {editingProduct ? (
+              <div className="span-2 product-variant-editor">
+                <div className="product-variant-heading">
+                  <div><strong>Variants for {editingProduct.name}</strong><small>Edit each variant here; name and category are shared by all variants.</small></div>
+                  <button
+                    className="button button-secondary"
+                    disabled={saving || variantRows.length >= maxAdditionalVariants}
+                    onClick={() => setVariantRows((current) => [...current, (current.length ? Math.max(...current) : -1) + 1])}
+                    type="button"
+                  >
+                    <Plus size={15} /> Add variant
+                  </button>
+                </div>
+                {editingProduct.variants.map((variant) => (
+                  <section className="product-variant-row" key={variant.id}>
+                    <div className="product-variant-row-heading">
+                      <strong>{variant.variant || "Standard variant"}</strong>
+                      <Badge tone={variant.active ? "success" : "neutral"}>{variant.active ? "Active" : "Inactive"}</Badge>
+                    </div>
+                    <ProductVariantFields prefix={`existing-${variant.id}`} variant={variant} />
+                  </section>
+                ))}
+                {variantRows.map((row, index) => (
+                  <section className="product-variant-row" key={`new-${row}`}>
+                    <div className="product-variant-row-heading">
+                      <strong>New variant {index + 1}</strong>
+                      <button aria-label={`Remove new variant ${index + 1}`} className="icon-button danger-icon" disabled={saving} onClick={() => setVariantRows((current) => current.filter((item) => item !== row))} type="button"><X size={15} /></button>
+                    </div>
+                    <ProductVariantFields prefix={`new-${row}`} />
+                  </section>
+                ))}
+              </div>
+            ) : (
+              <div className="span-2 product-variant-editor">
+                <div className="product-variant-heading">
+                  <div><strong>Product variants</strong><small>Each variant has its own unit, code, price and stock.</small></div>
+                  <button
+                    className="button button-secondary"
+                    disabled={saving || variantRows.length >= 4}
+                    onClick={() => setVariantRows((current) => [...current, Math.max(...current) + 1])}
+                    type="button"
+                  >
+                    <Plus size={15} /> Add variant
+                  </button>
+                </div>
+                {variantRows.map((row, index) => (
+                  <section className="product-variant-row" key={row}>
+                    <div className="product-variant-row-heading">
+                      <strong>Variant {index + 1}</strong>
+                      {variantRows.length > 1 && (
+                        <button
+                          aria-label={`Remove variant ${index + 1}`}
+                          className="icon-button danger-icon"
+                          disabled={saving}
+                          onClick={() => setVariantRows((current) => current.filter((item) => item !== row))}
+                          type="button"
+                        >
+                          <X size={15} />
+                        </button>
+                      )}
+                    </div>
+                    <ProductVariantFields prefix={`new-${row}`} />
+                  </section>
+                ))}
+              </div>
+            )}
             <div className="form-actions span-2">
               <button className="button button-secondary" disabled={saving} onClick={() => setShowForm(false)} type="button">Cancel</button>
               <button className="button button-primary" disabled={saving} type="submit">{saving ? "Saving…" : editingProduct ? "Save changes" : "Add product"}</button>

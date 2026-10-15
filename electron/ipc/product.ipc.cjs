@@ -221,6 +221,59 @@ function registerProductHandlers() {
     }
   });
 
+  ipcMain.handle("products:create-many", (_event, input) => {
+    if (!Array.isArray(input) || input.length < 2 || input.length > 4) {
+      throw new Error("Add between 2 and 4 variants");
+    }
+    const products = input.map((product) => normalizeProduct(product));
+    const name = products[0].name.toLocaleLowerCase();
+    if (products.some((product) => product.name.toLocaleLowerCase() !== name)) {
+      throw new Error("All variants must have the same product name");
+    }
+    const variants = products.map((product) => product.variant.toLocaleLowerCase());
+    if (variants.some((variant) => !variant) || new Set(variants).size !== variants.length) {
+      throw new Error("Enter a different variant name for each product");
+    }
+
+    const db = getDatabase();
+    const imageFileNames = [];
+    try {
+      const imagePaths = input.map((product) => {
+        const imageFileName = product.image_data_url
+          ? storeProductImage(product.image_data_url)
+          : null;
+        if (imageFileName) imageFileNames.push(imageFileName);
+        return imageFileName;
+      });
+      const createAll = db.transaction(() => products.map((product, index) => {
+        const result = db.prepare(`
+          INSERT INTO products
+            (product_code, name, variant, category, unit, no_of_units,
+             mrp, purchase_price, selling_price, stock, active, image_path, minimum_stock)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
+        `).run(
+          product.productCode,
+          product.name,
+          product.variant,
+          product.category,
+          product.unit,
+          product.noOfUnits,
+          product.mrp,
+          product.purchasePrice,
+          product.sellingPrice,
+          product.stock,
+          imagePaths[index],
+          product.minimumStock,
+        );
+        return Number(result.lastInsertRowid);
+      }));
+      return createAll().map((id) => getProduct(db, id));
+    } catch (error) {
+      for (const imageFileName of imageFileNames) removeStoredImage(imageFileName);
+      throw error;
+    }
+  });
+
   ipcMain.handle("products:update", (_event, input) => {
     const product = normalizeProduct(input, { requireId: true });
     const db = getDatabase();

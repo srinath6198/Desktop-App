@@ -1,13 +1,15 @@
 {
   "name": "flower-billing-app",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.1",
+  "productName": "Flower Billing App",
   "type": "module",
   "main": "electron/main.cjs",
   "scripts": {
     "dev": "vite",
     "electron:dev": "concurrently -k \"vite --host 127.0.0.1 --strictPort\" \"wait-on http://127.0.0.1:5173 && electron .\"",
     "build": "vite build",
+    "dist": "npm run build && electron-builder --win",
     "lint": "oxlint",
     "preview": "vite preview"
   },
@@ -20,8 +22,7 @@
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-hot-toast": "^2.6.1",
-    "react-router-dom": "^7.18.4",
-    "sass": "^1.105.1"
+    "react-router-dom": "^7.18.4"
   },
   "devDependencies": {
     "@babel/core": "^7.29.7",
@@ -35,7 +36,33 @@
     "electron": "^44.7.0",
     "electron-builder": "^26.15.3",
     "oxlint": "^1.81.0",
+    "sass": "^1.105.1",
     "vite": "^8.3.0",
     "wait-on": "^9.5.1"
+  },
+  "build": {
+    "appId": "com.flowerbilling.app",
+    "productName": "Flower Billing App",
+    "npmRebuild": false,
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "asarUnpack": [
+      "node_modules/better-sqlite3/**/*"
+    ],
+    "win": {
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
   }
 }

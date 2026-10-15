@@ -68,6 +68,8 @@ function runMigrations(db) {
     const saleMigrations = [
       ["subtotal", "REAL NOT NULL DEFAULT 0"],
       ["tax", "REAL NOT NULL DEFAULT 0"],
+      ["tax_rate", "REAL NOT NULL DEFAULT 5"],
+      ["show_tax", "INTEGER NOT NULL DEFAULT 1 CHECK (show_tax IN (0, 1))"],
       ["amount_paid", "REAL NOT NULL DEFAULT 0"],
       ["payment_status", "TEXT NOT NULL DEFAULT 'paid'"],
     ];

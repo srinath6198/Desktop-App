@@ -22,6 +22,8 @@ renderer, and runs with the sandbox enabled.
 Products are stored in the local SQLite database. Deactivating a product marks
 it inactive without deleting its row, so historical records remain intact.
 Use the product status filter to view inactive products and reactivate them.
+When adding a product, add up to four variants under the same product name.
+Each variant has its own unit of measure, product code, prices, and stock.
 
 Supplier records are stored in the same database. Add, edit, deactivate, and
 reactivate suppliers from the Suppliers screen; deactivation retains supplier
@@ -31,6 +33,16 @@ Customer records support contact details, address, email, Aadhaar number, GST
 number, and a profile photo. Aadhaar numbers are encrypted at rest with the
 operating system's Electron secure-storage integration; profile photos are kept
 under the application's local data directory.
+
+Shop settings, including the shop name, invoice short name, logo, contact details,
+GST number, owner name, tax rate, invoice display preferences, receipt footer,
+and terms and conditions are persisted in SQLite. Terms can be added, edited,
+removed, and included as a numbered list on printed invoices and invoice PDFs.
+New invoice numbers use the configured short name and a sequential number (for
+example, `BLOOM-0001`). Printed invoices and invoice PDFs include configured
+shop details and an authorized-signature line. PDF sharing saves an invoice PDF
+and opens the customer's WhatsApp chat; attach the saved PDF in WhatsApp to send
+it.
 
 The Customer Credit screen stores credit charges and received payments in a
 SQLite ledger, calculates outstanding balances, prevents payments above the
@@ -43,6 +55,9 @@ customer credit ledger. Sales History reads persisted invoices and provides
 search, date filters, payment summaries, and CSV export. Customer payments are
 applied to the oldest unpaid sales invoices first. Tax currently follows the
 existing bill calculation of 5%.
+
+The dashboard reads sales totals, bill counts, product stock, customers, recent
+invoices, and this month's best-selling flowers from SQLite through Electron IPC.
 
 The Stock Entry screen lists all products, including inactive records, and
 supports name/code search, category and stock-status filters, minimum-stock
@@ -63,11 +78,16 @@ inventory while retaining the original purchase and return history.
 
 ## Native SQLite dependency
 
-`better-sqlite3` is a native Node.js module. If no compatible prebuilt binary is
-available for the installed Electron version, rebuilding it on Windows requires
-the Visual Studio C++ Build Tools and a Windows SDK:
+`better-sqlite3` includes a Windows N-API prebuilt binary, which is compatible
+with the Electron runtime used by this project. Electron Builder uses that
+prebuild rather than compiling native dependencies during packaging. Sass is a
+build-time dependency and is not included in the packaged app.
 
 ```powershell
-npx electron-rebuild -f -w better-sqlite3
+npm run dist
 ```
+
+This creates the Windows Setup installer under `release`. Do not run
+`electron-builder install-app-deps` for this project; it attempts to rebuild
+unneeded native dependencies such as Sass's file watcher.
 # Desktop-App

@@ -1,0 +1,48 @@
+export function formatBillDate(value) {
+  const date = new Date(`${value.replace(" ", "T")}Z`)
+  if (Number.isNaN(date.getTime())) return value
+  return new Intl.DateTimeFormat("en-IN", { dateStyle: "medium", timeStyle: "short" }).format(date)
+}
+
+export function toBillReceipt(sale, shopSettings = sale.settings) {
+  const settings = shopSettings ?? {}
+  const terms = settings.termsAndConditions
+  const termsAndConditions = Array.isArray(terms)
+    ? terms.map((term) => String(term).trim()).filter(Boolean).join("\n")
+    : typeof terms === "string"
+      ? terms.split(/\r?\n/).map((term) => term.trim()).filter(Boolean).join("\n")
+      : ""
+  return {
+    invoiceNumber: sale.invoice_number,
+    customer: sale.customer_name,
+    customerPhone: sale.customer_phone ?? "",
+    payment: sale.payment_method,
+    paymentStatus: sale.payment_status,
+    amountPaid: sale.amount_paid,
+    date: formatBillDate(sale.created_at),
+    items: sale.items.map((item) => ({
+      name: item.product_name,
+      variant: item.variant,
+      unit: item.unit,
+      quantity: item.quantity,
+      unitPrice: item.price,
+    })),
+    subtotal: sale.subtotal,
+    tax: sale.tax,
+    total: sale.total,
+    taxRate: sale.tax_rate ?? settings.taxRate ?? 0,
+    showTax: sale.show_tax == null ? settings.showTax !== false : sale.show_tax === 1,
+    showGst: settings.showGst !== false,
+    shop: {
+      shopName: settings.shopName ?? "Shop",
+      address: settings.address ?? "",
+      mobileNumber: settings.mobileNumber ?? "",
+      email: settings.email ?? "",
+      gstNumber: settings.gstNumber ?? "",
+      ownerName: settings.ownerName ?? "",
+      logoDataUrl: settings.logoDataUrl ?? "",
+      receiptFooter: settings.receiptFooter ?? "",
+      termsAndConditions,
+    },
+  }
+}
