@@ -47,4 +47,9 @@ contextBridge.exposeInMainWorld("desktopAPI", {
     report: (customerId) => ipcRenderer.invoke("customer-credit:report", customerId),
     createEntry: (entry) => ipcRenderer.invoke("customer-credit:create-entry", entry),
   },
+
+  sales: {
+    list: () => ipcRenderer.invoke("sales:list"),
+    create: (sale) => ipcRenderer.invoke("sales:create", sale),
+  },
 });

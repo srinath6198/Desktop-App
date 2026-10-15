@@ -23,6 +23,7 @@ function formatMovementDate(value) {
 }
 
 function getMovementLabel(type) {
+  if (type === "sale") return "Sale"
   if (type === "purchase") return "Purchase"
   if (type === "purchase_return") return "Purchase return"
   if (type === "adjustment") return "Adjustment"

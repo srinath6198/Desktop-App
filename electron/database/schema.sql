@@ -59,8 +59,12 @@ CREATE TABLE IF NOT EXISTS sales (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   invoice_number TEXT NOT NULL UNIQUE,
   customer_id INTEGER,
+  subtotal REAL NOT NULL DEFAULT 0,
+  tax REAL NOT NULL DEFAULT 0,
   total REAL NOT NULL DEFAULT 0,
   payment_method TEXT NOT NULL DEFAULT 'cash',
+  amount_paid REAL NOT NULL DEFAULT 0,
+  payment_status TEXT NOT NULL DEFAULT 'paid' CHECK (payment_status IN ('paid', 'due')),
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (customer_id) REFERENCES customers(id)
 );
@@ -69,11 +73,24 @@ CREATE TABLE IF NOT EXISTS sale_items (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   sale_id INTEGER NOT NULL,
   product_id INTEGER NOT NULL,
+  product_name TEXT NOT NULL DEFAULT '',
+  variant TEXT NOT NULL DEFAULT '',
+  unit TEXT NOT NULL DEFAULT '',
   quantity REAL NOT NULL,
   price REAL NOT NULL,
   subtotal REAL NOT NULL,
   FOREIGN KEY (sale_id) REFERENCES sales(id),
   FOREIGN KEY (product_id) REFERENCES products(id)
+);
+
+CREATE TABLE IF NOT EXISTS sale_payments (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  sale_id INTEGER NOT NULL,
+  credit_entry_id INTEGER NOT NULL,
+  amount REAL NOT NULL CHECK (amount > 0),
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (sale_id) REFERENCES sales(id),
+  FOREIGN KEY (credit_entry_id) REFERENCES customer_credit_entries(id)
 );
 
 CREATE TABLE IF NOT EXISTS purchases (

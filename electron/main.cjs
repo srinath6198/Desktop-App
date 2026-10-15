@@ -25,6 +25,9 @@ const {
 const {
   registerCustomerCreditHandlers,
 } = require("./ipc/customer-credit.ipc.cjs");
+const {
+  registerSaleHandlers,
+} = require("./ipc/sale.ipc.cjs");
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -93,6 +96,7 @@ app.whenReady().then(() => {
   registerStockHandlers();
   registerCustomerHandlers();
   registerCustomerCreditHandlers();
+  registerSaleHandlers();
   registerExternalLinkHandler();
   createWindow();
 

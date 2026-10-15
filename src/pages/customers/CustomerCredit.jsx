@@ -210,6 +210,7 @@ function CustomerCredit() {
               </select>
             </label>
             <label className="form-field span-2">Amount (₹)<input autoFocus min="0.01" name="amount" required step="0.01" type="number" /></label>
+            {entryType === "payment" && <p className="muted-text span-2">Payments are applied to the customer’s oldest unpaid sales invoices first.</p>}
             <label className="form-field span-2">Reference / receipt number<input maxLength="250" name="reference" placeholder="Optional reference" /></label>
             <label className="form-field span-2">Notes<input maxLength="250" name="notes" placeholder={entryType === "payment" ? "Payment method or note" : "Invoice or reason for credit"} /></label>
             <div className="form-actions span-2">

@@ -61,6 +61,38 @@ function runMigrations(db) {
         db.exec(`ALTER TABLE customers ADD COLUMN ${column} ${definition}`);
       }
     }
+
+    const saleColumns = new Set(
+      db.prepare("PRAGMA table_info(sales)").all().map((column) => column.name),
+    );
+    const saleMigrations = [
+      ["subtotal", "REAL NOT NULL DEFAULT 0"],
+      ["tax", "REAL NOT NULL DEFAULT 0"],
+      ["amount_paid", "REAL NOT NULL DEFAULT 0"],
+      ["payment_status", "TEXT NOT NULL DEFAULT 'paid'"],
+    ];
+    for (const [column, definition] of saleMigrations) {
+      if (!saleColumns.has(column)) {
+        db.exec(`ALTER TABLE sales ADD COLUMN ${column} ${definition}`);
+      }
+    }
+    if (!saleColumns.has("amount_paid")) {
+      db.exec("UPDATE sales SET amount_paid = total, subtotal = total, tax = 0");
+    }
+
+    const saleItemColumns = new Set(
+      db.prepare("PRAGMA table_info(sale_items)").all().map((column) => column.name),
+    );
+    const saleItemMigrations = [
+      ["product_name", "TEXT NOT NULL DEFAULT ''"],
+      ["variant", "TEXT NOT NULL DEFAULT ''"],
+      ["unit", "TEXT NOT NULL DEFAULT ''"],
+    ];
+    for (const [column, definition] of saleItemMigrations) {
+      if (!saleItemColumns.has(column)) {
+        db.exec(`ALTER TABLE sale_items ADD COLUMN ${column} ${definition}`);
+      }
+    }
   })();
 }
 

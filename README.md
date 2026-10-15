@@ -36,6 +36,14 @@ The Customer Credit screen stores credit charges and received payments in a
 SQLite ledger, calculates outstanding balances, prevents payments above the
 current balance, and prints customer-specific or all-customer statements.
 
+New Bill loads active products (including saved product images) and customers
+from SQLite. Completing checkout atomically saves the invoice and item
+snapshots, deducts stock, records sale movements, and adds credit bills to the
+customer credit ledger. Sales History reads persisted invoices and provides
+search, date filters, payment summaries, and CSV export. Customer payments are
+applied to the oldest unpaid sales invoices first. Tax currently follows the
+existing bill calculation of 5%.
+
 The Stock Entry screen lists all products, including inactive records, and
 supports name/code search, category and stock-status filters, minimum-stock
 levels, and paginated results. Adding stock records a stock movement and updates

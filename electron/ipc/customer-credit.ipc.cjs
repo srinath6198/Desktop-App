@@ -83,7 +83,39 @@ function registerCustomerCreditHandlers() {
           (customer_id, entry_type, amount, reference, notes)
         VALUES (?, ?, ?, ?, ?)
       `).run(entry.customerId, entry.type, entry.amount, entry.reference, entry.notes);
-      return Number(result.lastInsertRowid);
+      const entryId = Number(result.lastInsertRowid);
+
+      if (entry.type === "payment") {
+        const dueSales = db.prepare(`
+          SELECT id, total, amount_paid
+          FROM sales
+          WHERE customer_id = ? AND payment_status = 'due'
+          ORDER BY created_at, id
+        `).all(entry.customerId);
+        const insertSalePayment = db.prepare(`
+          INSERT INTO sale_payments (sale_id, credit_entry_id, amount)
+          VALUES (?, ?, ?)
+        `);
+        const applyPayment = db.prepare(`
+          UPDATE sales
+          SET amount_paid = amount_paid + ?,
+              payment_status = CASE WHEN amount_paid + ? >= total THEN 'paid' ELSE 'due' END
+          WHERE id = ?
+        `);
+        let remaining = Math.round(entry.amount * 100);
+        for (const sale of dueSales) {
+          if (remaining <= 0) break;
+          const balance = Math.max(0, Math.round((sale.total - sale.amount_paid) * 100));
+          const allocation = Math.min(remaining, balance);
+          if (allocation <= 0) continue;
+          const allocatedAmount = allocation / 100;
+          insertSalePayment.run(sale.id, entryId, allocatedAmount);
+          applyPayment.run(allocatedAmount, allocatedAmount, sale.id);
+          remaining -= allocation;
+        }
+      }
+
+      return entryId;
     });
 
     const id = create();
