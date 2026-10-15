@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import {
   Menu,
@@ -21,6 +21,7 @@ import {
   PanelLeftOpen,
 } from "lucide-react";
 
+import { settingsService } from "../../services/settings.service";
 import "./MainLayout.scss";
 
 const navigation = [
@@ -42,6 +43,7 @@ const navigation = [
       { label: "Customer Credit", path: "/customers/credit", icon: Wallet },
       { label: "Suppliers", path: "/suppliers", icon: Truck },
       { label: "Inventory", path: "/inventory", icon: Boxes },
+      { label: "Extra Charges", path: "/extra-charges", icon: Boxes },
     ],
   },
   {
@@ -74,6 +76,11 @@ const pageTitles = {
 function MainLayout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [shopSettings, setShopSettings] = useState(null);
+
+  useEffect(() => {
+    settingsService.get().then(setShopSettings).catch(() => { })
+  }, []);
 
   const location = useLocation();
   const pageTitle = pageTitles[location.pathname] || "Flower Billing";
@@ -101,12 +108,14 @@ function MainLayout() {
           .join(" ")}
       >
         <div className="sidebar-brand">
-          <div className="brand-logo">
-            <Flower2 size={25} strokeWidth={2.2} />
-          </div>
+          {/* <div className="brand-logo">
+            {shopSettings?.logoDataUrl
+              ? <img alt="Shop logo" src={shopSettings.logoDataUrl} />
+              : <Flower2 size={25} strokeWidth={2.2} />}
+          </div> */}
 
           <div className="brand-details">
-            <h2>FlowerPOS</h2>
+            <h2>Offline POS</h2>
             <span>Billing & Inventory</span>
           </div>
 
@@ -177,8 +186,12 @@ function MainLayout() {
             </button>
 
             <div className="page-heading">
-              <h1>{pageTitle}</h1>
-              <p>Manage your flower shop efficiently</p>
+              <div className="brand-logo">
+                {shopSettings?.logoDataUrl
+                  ? <img alt="Shop logo" src={shopSettings.logoDataUrl} />
+                  : <Flower2 size={25} strokeWidth={2.2} />}
+              </div>
+              <h2>{shopSettings?.shopName || "Offline POS"}</h2>
             </div>
           </div>
 
@@ -231,7 +244,7 @@ function MainLayout() {
         </main>
 
         <footer className="app-footer">
-          <span>FlowerPOS</span>
+          <span>Offline POS</span>
           <span>Offline Billing System</span>
         </footer>
       </div>

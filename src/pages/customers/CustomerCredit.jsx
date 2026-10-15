@@ -172,7 +172,7 @@ function CustomerCredit() {
 
       <section aria-label="Printable customer credit statement" className="credit-print-report">
         <header>
-          <h1>FlowerPOS Customer Credit Statement</h1>
+          <h1>Offline POS Customer Credit Statement</h1>
           <p>{selectedCustomer ? selectedCustomer.name : "All customers"}</p>
           {selectedCustomer?.phone && <p>{selectedCustomer.phone}</p>}
           <p>Printed {new Intl.DateTimeFormat("en-IN", { dateStyle: "medium", timeStyle: "short" }).format(printedAt)}</p>

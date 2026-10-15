@@ -79,7 +79,7 @@ function StockEntry() {
       return `• ${product.name}${product.variant ? ` (${product.variant})` : ""} | SKU: ${product.productCode || "—"} | ${product.category || "Uncategorized"} | Stock: ${product.stock} ${product.unit} | Minimum: ${product.minimumStock} ${product.unit} | ${status}`
     })
     const text = [
-      "*FlowerPOS — Stock Report*",
+      "*Offline POS — Stock Report*",
       `Generated: ${reportDate}`,
       `Products: ${filteredProducts.length}`,
       `Total active stock: ${totalOnHand}`,
@@ -260,7 +260,7 @@ function StockEntry() {
 
       <section aria-label="Printable stock report" className="stock-report-print">
         <header>
-          <h1>FlowerPOS Stock Report</h1>
+          <h1>Offline POS Stock Report</h1>
           <p>Generated {new Intl.DateTimeFormat("en-IN", { dateStyle: "medium", timeStyle: "short" }).format(reportGeneratedAt)}</p>
           <p>{filteredProducts.length} products · {totalOnHand} active units on hand · {lowStockCount} low-stock products</p>
         </header>

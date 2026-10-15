@@ -214,7 +214,7 @@ function Purchases() {
       `• ${line.productName}${line.variant ? ` (${line.variant})` : ""} — ${line.quantity} ${line.unit} × ${formatCurrency(line.purchaseRate)} = ${formatCurrency(line.amount)}`,
     )
     const text = [
-      `*Purchase ${savedPurchase.id} — FlowerPOS*`,
+      `*Purchase ${savedPurchase.id} — Offline POS*`,
       `Supplier: ${savedPurchase.supplier}`,
       `Date: ${savedPurchase.date}`,
       "",
@@ -472,7 +472,7 @@ function Purchases() {
       {savedPurchase && (
         <article className="print-receipt purchase-print-receipt">
           <header>
-            <h1>FlowerPOS Purchase Receipt</h1>
+            <h1>Offline POS Purchase Receipt</h1>
             <p>Supplier purchase record</p>
           </header>
           <div className="receipt-meta"><span>Purchase</span><strong>{savedPurchase.id}</strong></div>

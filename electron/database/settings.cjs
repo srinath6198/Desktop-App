@@ -1,5 +1,5 @@
 const DEFAULT_SETTINGS = Object.freeze({
-  shopName: "FlowerPOS Flower Shop",
+  shopName: "Offline POS Flower Shop",
   shortName: "FLOWER",
   address: "",
   mobileNumber: "",
