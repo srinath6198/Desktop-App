@@ -33,6 +33,11 @@ export function toBillReceipt(sale, shopSettings = sale.settings) {
     taxRate: sale.tax_rate ?? settings.taxRate ?? 0,
     showTax: sale.show_tax == null ? settings.showTax !== false : sale.show_tax === 1,
     showGst: settings.showGst !== false,
+    parcelCharge: sale.parcel_charge ?? 0,
+    travelCharge: sale.travel_charge ?? 0,
+    deliveryCharge: sale.delivery_charge ?? 0,
+    otherCharge: sale.other_charge ?? 0,
+    otherChargeLabel: sale.other_charge_label || "Other",
     shop: {
       shopName: settings.shopName ?? "Shop",
       address: settings.address ?? "",

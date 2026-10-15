@@ -35,7 +35,21 @@ function normalizeSale(input) {
     throw new Error("Each product can appear only once in a bill");
   }
 
-  return { customerId: input.customerId ?? null, paymentMethod: input.paymentMethod, items };
+  function toCharge(val) {
+    const n = Number(val ?? 0);
+    return Number.isFinite(n) && n >= 0 ? Math.round(n * 100) / 100 : 0;
+  }
+
+  return {
+    customerId: input.customerId ?? null,
+    paymentMethod: input.paymentMethod,
+    items,
+    parcelCharge: toCharge(input.parcelCharge),
+    travelCharge: toCharge(input.travelCharge),
+    deliveryCharge: toCharge(input.deliveryCharge),
+    otherCharge: toCharge(input.otherCharge),
+    otherChargeLabel: typeof input.otherChargeLabel === "string" && input.otherChargeLabel.trim() ? input.otherChargeLabel.trim().slice(0, 60) : "Other",
+  };
 }
 
 function getSale(db, saleId) {
@@ -43,7 +57,8 @@ function getSale(db, saleId) {
     SELECT s.id, s.invoice_number, s.customer_id,
            COALESCE(c.name, 'Walk-in customer') AS customer_name, c.phone AS customer_phone,
            s.subtotal, s.tax, s.tax_rate, s.show_tax, s.total, s.payment_method,
-           s.amount_paid, s.payment_status, s.created_at
+           s.amount_paid, s.payment_status, s.created_at,
+           s.parcel_charge, s.travel_charge, s.delivery_charge, s.other_charge, s.other_charge_label
     FROM sales s
     LEFT JOIN customers c ON c.id = s.customer_id
     WHERE s.id = ?
@@ -105,7 +120,8 @@ function registerSaleHandlers() {
       const settings = getAppSettings(db);
       const subtotal = Math.round(saleItems.reduce((sum, item) => sum + item.subtotal, 0) * 100) / 100;
       const tax = Math.round(subtotal * settings.taxRate / 100 * 100) / 100;
-      const total = Math.round((subtotal + tax) * 100) / 100;
+      const extraCharges = sale.parcelCharge + sale.travelCharge + sale.deliveryCharge + sale.otherCharge;
+      const total = Math.round((subtotal + tax + extraCharges) * 100) / 100;
       const amountPaid = sale.paymentMethod === "Credit / due" ? 0 : total;
       const paymentStatus = amountPaid >= total ? "paid" : "due";
       let sequence = (db.prepare("SELECT COALESCE(MAX(seq), 0) AS value FROM sqlite_sequence WHERE name = 'sales'").get().value || 0) + 1;
@@ -116,8 +132,9 @@ function registerSaleHandlers() {
       } while (db.prepare("SELECT 1 FROM sales WHERE invoice_number = ?").get(invoiceNumber));
       const saleResult = db.prepare(`
         INSERT INTO sales
-          (invoice_number, customer_id, subtotal, tax, tax_rate, show_tax, total, payment_method, amount_paid, payment_status)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          (invoice_number, customer_id, subtotal, tax, tax_rate, show_tax, total, payment_method, amount_paid, payment_status,
+           parcel_charge, travel_charge, delivery_charge, other_charge, other_charge_label)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
         invoiceNumber,
         sale.customerId,
@@ -129,6 +146,11 @@ function registerSaleHandlers() {
         sale.paymentMethod,
         amountPaid,
         paymentStatus,
+        sale.parcelCharge,
+        sale.travelCharge,
+        sale.deliveryCharge,
+        sale.otherCharge,
+        sale.otherChargeLabel,
       );
       const saleId = Number(saleResult.lastInsertRowid);
       const insertItem = db.prepare(`

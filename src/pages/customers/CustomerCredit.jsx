@@ -114,7 +114,7 @@ function CustomerCredit() {
 
       <Panel className="table-panel">
         <div className="credit-toolbar">
-          <label className="field-search"><Search size={17} /><input onChange={(event) => setQuery(event.target.value)} placeholder="Search customer name, phone or email..." value={query} /></label>
+          <label className="credit-field-search"><Search size={17} /><input onChange={(event) => setQuery(event.target.value)} placeholder="Search customer name, phone or email..." value={query} /></label>
           <select aria-label="Filter credit report by customer" className="select-control" onChange={(event) => setSelectedCustomerId(event.target.value)} value={selectedCustomerId}>
             <option value="">All customers</option>
             {customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name}</option>)}

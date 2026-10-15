@@ -670,6 +670,31 @@ td strong {
   color: #a0a8b1;
 }
 
+.credit-field-search {
+  display: flex;
+  width: min(340px, 100%);
+  min-height: 38px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  color: #8b95a0;
+  background: #fff;
+  border: 1px solid #e5e9ec;
+  border-radius: 7px;
+  input::placeholder {
+  color: #a0a8b1;
+}
+input {
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  color: #34404d;
+  background: transparent;
+  border: 0;
+  outline: 0;
+  font-size: 11px;
+}
+}
 .results-count,
 .muted-text {
   color: #89939e;
@@ -774,6 +799,8 @@ td strong {
   align-items: center;
   gap: 12px;
   margin: 0 20px;
+  display: flex;
+  flex-direction: column;
 }
 
 .credit-toolbar .field-search {
@@ -1600,8 +1627,8 @@ td strong {
 }
 
 .variant-option-copy small {
-  color: #89939e;
-  font-size: 10px;
+  color: #1e80ff;
+  font-size: 12px;
 }
 
 .variant-option-price {
@@ -1803,6 +1830,225 @@ td strong {
   margin: 0;
   padding-left: 18px;
   line-height: 1.4;
+}
+
+.extra-charge-section {
+  margin-top: 12px;
+  padding: 12px;
+  background: #f8faf9;
+  border: 1px solid #edf0ef;
+  border-radius: 8px;
+}
+
+.extra-charge-title {
+  display: block;
+  margin-bottom: 10px;
+  color: #485460;
+  font-size: 11px;
+}
+
+.extra-charge-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.extra-charge-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 10px;
+  color: #64717e;
+  font-weight: 600;
+}
+
+.extra-charge-field input[type="number"],
+.extra-charge-field input[type="text"] {
+  width: 100%;
+  min-height: 34px;
+  padding: 0 8px;
+  border: 1px solid #e3e8ec;
+  border-radius: 6px;
+  background: #fff;
+  color: #394553;
+  font: inherit;
+  font-size: 11px;
+}
+
+.extra-charge-field input:focus {
+  border-color: #79bd96;
+  outline: none;
+  box-shadow: 0 0 0 3px rgb(25 135 84 / 9%);
+}
+
+.other-label-input {
+  margin-bottom: 2px;
+}
+
+.extra-charge-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed #d8e1db;
+  color: #485460;
+  font-size: 11px;
+}
+
+.extra-charge-total strong {
+  color: var(--green-dark);
+}
+
+/* Extra charge modal */
+.ec-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.ec-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #f8faf9;
+  border: 1px solid #edf0ef;
+  border-radius: 8px;
+  transition: border-color 0.15s;
+}
+
+.ec-row-active {
+  border-color: #a9d0b8;
+  background: #f4fbf7;
+}
+
+.ec-row-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.ec-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.ec-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #3a4550;
+}
+
+.ec-label-input {
+  flex: 1;
+  min-width: 0;
+  min-height: 32px;
+  padding: 0 8px;
+  border: 1px solid #e3e8ec;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #3a4550;
+  background: #fff;
+  outline: none;
+}
+
+.ec-label-input:focus {
+  border-color: #79bd96;
+  box-shadow: 0 0 0 3px rgb(25 135 84 / 9%);
+}
+
+.ec-row-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.ec-rupee {
+  font-size: 12px;
+  color: #64717e;
+  font-weight: 600;
+}
+
+.ec-amt-input {
+  width: 90px;
+  min-height: 34px;
+  padding: 0 8px;
+  border: 1px solid #e3e8ec;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #394553;
+  background: #fff;
+  text-align: right;
+  outline: none;
+}
+
+.ec-amt-input:focus {
+  border-color: #79bd96;
+  box-shadow: 0 0 0 3px rgb(25 135 84 / 9%);
+}
+
+.ec-remove {
+  width: 28px;
+  height: 28px;
+}
+
+.ec-total-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: #eef8f2;
+  border: 1px solid #d0eadb;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #3a4550;
+}
+
+.ec-total-row strong {
+  color: var(--green-dark);
+  font-size: 13px;
+}
+
+/* Extra charge summary in bill panel */
+.ec-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 2px;
+}
+
+.ec-summary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11px;
+  color: #64717e;
+  padding: 2px 0;
+}
+
+.ec-summary-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ec-summary-right strong {
+  color: #34404d;
+  font-size: 11px;
+}
+
+.ec-edit-btn {
+  width: 22px;
+  height: 22px;
 }
 
 .payment-field {

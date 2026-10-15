@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
-import { MessageCircle, Printer, Search } from "lucide-react"
+import { FileText, MessageCircle, Printer, Search } from "lucide-react"
 import { Badge, Modal } from "../../components/ui/PageUI"
 import BillTerms from "../../components/billing/BillTerms"
 import PrintableBill, { printBill } from "../../components/billing/PrintableBill"
@@ -29,6 +29,7 @@ function Reprint({ onClose }) {
   const [loading, setLoading] = useState(true)
   const [selectedBillLoading, setSelectedBillLoading] = useState(false)
   const [sharingPdf, setSharingPdf] = useState(false)
+  const [savingPdf, setSavingPdf] = useState(false)
   const [shareMessage, setShareMessage] = useState("")
   const [error, setError] = useState("")
 
@@ -83,6 +84,27 @@ function Reprint({ onClose }) {
       await printBill(toBillReceipt(selectedBill))
     } catch (printError) {
       setError(printError.message || "Unable to print this bill.")
+    }
+  }
+
+  async function saveSelectedBillPdf() {
+    if (!selectedBill) return
+    setSavingPdf(true)
+    setError("")
+    setShareMessage("")
+    const savePdf = window.desktopAPI?.saveBillPdf
+    if (!savePdf) {
+      setError("PDF saving is only available in the desktop app.")
+      setSavingPdf(false)
+      return
+    }
+    try {
+      const result = await savePdf(toBillReceipt(selectedBill))
+      if (!result.canceled) setShareMessage(`PDF saved to ${result.filePath}.`)
+    } catch (saveError) {
+      setError(saveError.message || "Unable to save the invoice PDF.")
+    } finally {
+      setSavingPdf(false)
     }
   }
 
@@ -180,6 +202,9 @@ function Reprint({ onClose }) {
                     <span>{selectedBill.customer_name} · {formatBillDate(selectedBill.created_at)}</span>
                   </div>
                   <div className="saved-bill-preview-actions">
+                    <button className="button button-secondary" disabled={savingPdf} onClick={saveSelectedBillPdf} type="button">
+                      <FileText size={16} /> {savingPdf ? "Saving PDF..." : "Save bill"}
+                    </button>
                     <button className="button button-secondary" disabled={sharingPdf} onClick={shareSelectedBill} type="button">
                       <MessageCircle size={16} /> {sharingPdf ? "Preparing PDF..." : "Share PDF"}
                     </button>

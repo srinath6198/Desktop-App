@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
-import { Check, MessageCircle, Minus, Plus, Printer, Search, ShoppingCart, Trash2 } from "lucide-react"
+import { Check, FileText, MessageCircle, Minus, Plus, Printer, Search, ShoppingCart, Trash2 } from "lucide-react"
 import { Badge, Modal, PageTitle, Panel } from "../../components/ui/PageUI"
 import BillTerms from "../../components/billing/BillTerms"
 import ToastContainer from "../../components/ui/ToastContainer"
@@ -13,6 +13,9 @@ import { settingsService } from "../../services/settings.service"
 import { toBillReceipt } from "../../utils/billReceipt"
 import { shareBillPdf as saveAndOpenBillPdf } from "../../utils/shareBillPdf"
 import AddCustomer from "../customers/AddCustomer"
+import ExtraChargeModal, { ExtraChargeSummary } from "../../components/billing/ExtraCharge"
+
+const DEFAULT_CHARGES = { parcelCharge: 0, travelCharge: 0, deliveryCharge: 0, otherCharge: 0, otherChargeLabel: "Other" }
 
 function NewBill() {
   const [query, setQuery] = useState("")
@@ -33,6 +36,8 @@ function NewBill() {
   const [showSavedBills, setShowSavedBills] = useState(false)
   const [showCustomerForm, setShowCustomerForm] = useState(false)
   const [toast, setToast] = useState(null)
+  const [charges, setCharges] = useState(DEFAULT_CHARGES)
+  const [showChargeModal, setShowChargeModal] = useState(false)
 
   useEffect(() => {
     let mounted = true
@@ -61,7 +66,8 @@ function NewBill() {
   const subtotal = items.reduce((sum, item) => sum + item.product.sellingPrice * item.quantity, 0)
   const taxRate = shopSettings?.taxRate ?? 5
   const tax = Math.round(subtotal * taxRate / 100 * 100) / 100
-  const total = subtotal + tax
+  const extraTotal = charges.parcelCharge + charges.travelCharge + charges.deliveryCharge + charges.otherCharge
+  const total = subtotal + tax + extraTotal
   const categories = [...new Set(products.map((product) => product.category.trim()).filter(Boolean))]
     .sort((left, right) => left.localeCompare(right))
   const normalizedQuery = query.trim().toLocaleLowerCase()
@@ -147,12 +153,14 @@ function NewBill() {
         customerId: customerId || null,
         paymentMethod: payment,
         items,
+        ...charges,
       })
       const savedReceipt = toBillReceipt(savedSale, shopSettings ?? savedSale.settings)
       setReceipt(savedReceipt)
       setCompleted(true)
       setCart([])
       setCustomerId("")
+      setCharges(DEFAULT_CHARGES)
       setProducts((current) => current.map((product) => {
         const sold = items.find((item) => item.productId === product.id)
         return sold ? { ...product, stock: product.stock - sold.quantity } : product
@@ -173,6 +181,24 @@ function NewBill() {
       showToast("Bill sent to the default print dialog.")
     } catch (printError) {
       const message = printError.message || "Unable to print this bill."
+      setActionError(message)
+      showToast(message, "error")
+    }
+  }
+
+  async function saveAsPDF() {
+    if (!receipt) return
+    setActionError("")
+    const savePdf = window.desktopAPI?.saveBillPdf
+    if (!savePdf) {
+      showToast("PDF saving is only available in the desktop app.", "error")
+      return
+    }
+    try {
+      const result = await savePdf(receipt)
+      if (!result.canceled) showToast(`PDF saved to ${result.filePath}`)
+    } catch (error) {
+      const message = error.message || "Unable to save the invoice PDF."
       setActionError(message)
       showToast(message, "error")
     }
@@ -221,6 +247,9 @@ function NewBill() {
             </button>
             <button aria-label="Add customer" className="button button-secondary" onClick={() => setShowCustomerForm(true)} type="button">
               <Plus size={16} /> Add customer
+            </button>
+            <button aria-label="Extra charges" className="button button-secondary" onClick={() => setShowChargeModal(true)} type="button">
+              <Plus size={16} /> Extra charge
             </button>
             <Badge tone="neutral">{receipt ? `Invoice # ${receipt.invoiceNumber}` : "SQLite billing"}</Badge>
           </div>
@@ -329,9 +358,17 @@ function NewBill() {
             <div className="bill-summary">
               <div><span>Subtotal</span><span>{formatCurrency(subtotal)}</span></div>
               <div><span>Tax ({taxRate}%)</span><span>{formatCurrency(tax)}</span></div>
+              {charges.parcelCharge > 0 && <div><span>Parcel charge</span><span>{formatCurrency(charges.parcelCharge)}</span></div>}
+              {charges.travelCharge > 0 && <div><span>Travel charge</span><span>{formatCurrency(charges.travelCharge)}</span></div>}
+              {charges.deliveryCharge > 0 && <div><span>Delivery charge</span><span>{formatCurrency(charges.deliveryCharge)}</span></div>}
+              {charges.otherCharge > 0 && <div><span>{charges.otherChargeLabel || "Other"}</span><span>{formatCurrency(charges.otherCharge)}</span></div>}
               <div className="bill-total"><strong>Total due</strong><strong>{formatCurrency(total)}</strong></div>
             </div>
-            <BillTerms terms={shopSettings?.termsAndConditions} />
+            <ExtraChargeSummary
+              charges={charges}
+              onEdit={() => setShowChargeModal(true)}
+              onRemove={(key) => setCharges((c) => ({ ...c, [key]: 0 }))}
+            />
             <div className="bill-checkout-fields">
               <label className="form-field">
                 Customer
@@ -414,11 +451,22 @@ function NewBill() {
             <button className="button button-whatsapp" onClick={shareOnWhatsApp} type="button">
               <MessageCircle size={17} /> Save PDF & open WhatsApp
             </button>
+            <button className="button button-secondary" onClick={saveAsPDF} type="button">
+              <FileText size={17} /> Save as PDF
+            </button>
           </div>
         </Modal>
       )}
 
       <PrintableBill bill={receipt} />
+
+      {showChargeModal && (
+        <ExtraChargeModal
+          charges={charges}
+          onApply={setCharges}
+          onClose={() => setShowChargeModal(false)}
+        />
+      )}
 
       {showSavedBills && (
         <Reprint onClose={() => setShowSavedBills(false)} />

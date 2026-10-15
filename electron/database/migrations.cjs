@@ -72,6 +72,11 @@ function runMigrations(db) {
       ["show_tax", "INTEGER NOT NULL DEFAULT 1 CHECK (show_tax IN (0, 1))"],
       ["amount_paid", "REAL NOT NULL DEFAULT 0"],
       ["payment_status", "TEXT NOT NULL DEFAULT 'paid'"],
+      ["parcel_charge", "REAL NOT NULL DEFAULT 0"],
+      ["travel_charge", "REAL NOT NULL DEFAULT 0"],
+      ["delivery_charge", "REAL NOT NULL DEFAULT 0"],
+      ["other_charge", "REAL NOT NULL DEFAULT 0"],
+      ["other_charge_label", "TEXT NOT NULL DEFAULT 'Other'"],
     ];
     for (const [column, definition] of saleMigrations) {
       if (!saleColumns.has(column)) {

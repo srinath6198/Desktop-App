@@ -38,6 +38,7 @@ function normalizeBill(input) {
       throw new Error(`Bill ${field} is invalid`);
     }
   }
+  function toCharge(val) { const n = Number(val ?? 0); return Number.isFinite(n) && n >= 0 ? n : 0; }
   const items = input.items.map((item) => {
     if (!item || typeof item !== "object" || Array.isArray(item)) {
       throw new Error("Bill contains an invalid item");
@@ -87,6 +88,11 @@ function normalizeBill(input) {
     taxRate: Number.isFinite(input.taxRate) ? input.taxRate : 0,
     showTax: input.showTax === true,
     showGst: input.showGst === true,
+    parcelCharge: toCharge(input.parcelCharge),
+    travelCharge: toCharge(input.travelCharge),
+    deliveryCharge: toCharge(input.deliveryCharge),
+    otherCharge: toCharge(input.otherCharge),
+    otherChargeLabel: typeof input.otherChargeLabel === "string" && input.otherChargeLabel.trim() ? input.otherChargeLabel.trim() : "Other",
     items,
     shop: {
       shopName: typeof shop.shopName === "string" ? shop.shopName.slice(0, 120) : "",
@@ -138,7 +144,7 @@ function buildBillHtml(bill) {
         <meta charset="utf-8">
         <title>${escapeHtml(bill.invoiceNumber)}</title>
         <style>
-          @page { size: A4; margin: 14mm; }
+          @page { margin: 14mm; }
           * { box-sizing: border-box; }
           body { margin: 0; color: #202a35; font: 12px Arial, sans-serif; }
           header { padding-bottom: 16px; border-bottom: 2px solid #198754; text-align: center; }
@@ -183,6 +189,10 @@ function buildBillHtml(bill) {
         <section class="totals">
           <div class="totals-row"><span>Subtotal</span><span>${escapeHtml(formatCurrency(bill.subtotal))}</span></div>
           ${taxLine}
+          ${bill.parcelCharge > 0 ? `<div class="totals-row"><span>Parcel charge</span><span>${escapeHtml(formatCurrency(bill.parcelCharge))}</span></div>` : ""}
+          ${bill.travelCharge > 0 ? `<div class="totals-row"><span>Travel charge</span><span>${escapeHtml(formatCurrency(bill.travelCharge))}</span></div>` : ""}
+          ${bill.deliveryCharge > 0 ? `<div class="totals-row"><span>Delivery charge</span><span>${escapeHtml(formatCurrency(bill.deliveryCharge))}</span></div>` : ""}
+          ${bill.otherCharge > 0 ? `<div class="totals-row"><span>${escapeHtml(bill.otherChargeLabel)}</span><span>${escapeHtml(formatCurrency(bill.otherCharge))}</span></div>` : ""}
           <div class="totals-row grand-total"><span>Total</span><span>${escapeHtml(formatCurrency(bill.total))}</span></div>
           <div class="totals-row"><span>Payment</span><span>${escapeHtml(bill.payment)}</span></div>
           <div class="totals-row"><span>Status</span><span>${escapeHtml(dueStatus)}</span></div>

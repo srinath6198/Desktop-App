@@ -91,20 +91,6 @@
   margin-top: 12px;
 }
 
-@media print {
-  .print-receipt {
-    display: block;
-  }
-
-  .print-page {
-    page-break-after: always;
-  }
-
-  .print-page:last-child {
-    page-break-after: avoid;
-  }
-}
-
 .receipt-signature {
   display: flex;
   width: 180px;
@@ -119,4 +105,35 @@
 
 .receipt-signature small {
   font-size: 9px;
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 14mm;
+  }
+
+  body * {
+    visibility: hidden !important;
+  }
+
+  .print-receipt,
+  .print-receipt * {
+    visibility: visible !important;
+  }
+
+  .print-receipt {
+    display: block !important;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    color: #111;
+    background: #fff;
+    font-family: Arial, sans-serif;
+  }
+
+  .print-page + .print-page {
+    break-before: page;
+  }
 }

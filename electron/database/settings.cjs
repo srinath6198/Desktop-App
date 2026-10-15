@@ -39,6 +39,29 @@ const SETTING_KEYS = Object.freeze({
 function getAppSettings(db) {
   const rows = db.prepare("SELECT setting_key, setting_value FROM app_settings").all();
   const values = new Map(rows.map((row) => [row.setting_key, row.setting_value]));
+
+  // Seed defaults into DB on first run so all values are always DB-driven
+  if (rows.length === 0) {
+    const seed = db.prepare(`
+      INSERT OR IGNORE INTO app_settings (setting_key, setting_value) VALUES (?, ?)
+    `);
+    const seedAll = db.transaction(() => {
+      for (const [key, settingKey] of Object.entries(SETTING_KEYS)) {
+        const val = DEFAULT_SETTINGS[key];
+        seed.run(
+          settingKey,
+          key === "taxRate" ? String(val)
+            : key === "showTax" || key === "showGst" ? (val ? "1" : "0")
+            : val,
+        );
+      }
+    });
+    seedAll();
+    // Re-read from DB after seeding
+    const seeded = db.prepare("SELECT setting_key, setting_value FROM app_settings").all();
+    seeded.forEach((row) => values.set(row.setting_key, row.setting_value));
+  }
+
   return {
     shopName: values.get(SETTING_KEYS.shopName) ?? DEFAULT_SETTINGS.shopName,
     shortName: values.get(SETTING_KEYS.shortName) ?? DEFAULT_SETTINGS.shortName,
