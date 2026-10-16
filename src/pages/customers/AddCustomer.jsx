@@ -93,7 +93,7 @@ function AddCustomer({ customer = null, onClose, onSave }) {
           </div>
         </div>
         <label className="form-field span-2">Full name<input autoFocus defaultValue={formCustomer.name} maxLength="120" name="name" placeholder="Customer name" required /></label>
-        <label className="form-field">Phone number<input defaultValue={formCustomer.phone} maxLength="30" name="phone" placeholder="+91 98765 43210" type="tel" /></label>
+        <label className="form-field">Phone number<input defaultValue={formCustomer.phone} maxLength="30" name="phone" placeholder="+91 98765 43210" required type="tel" /></label>
         <label className="form-field">Email address<input defaultValue={formCustomer.email} maxLength="254" name="email" placeholder="customer@example.com" type="email" /></label>
         <label className="form-field span-2">Address<textarea defaultValue={formCustomer.address} maxLength="1000" name="address" placeholder="Street, area, city, state and PIN code" rows="2" /></label>
         <label className="form-field">Aadhaar number<input autoComplete="off" defaultValue={formCustomer.aadhaarNumber} inputMode="numeric" maxLength="14" name="aadhaarNumber" placeholder="12 digits" /></label>

@@ -109,6 +109,30 @@ function normalizeCustomer(input, { requireId = false } = {}) {
   };
 }
 
+function normalizePhoneForComparison(phone) {
+  return typeof phone === "string" ? phone.replace(/\D/g, "") : "";
+}
+
+function ensureUniquePhone(db, phone, customerId = null) {
+  const normalizedPhone = normalizePhoneForComparison(phone);
+  if (!normalizedPhone) return;
+  if (customerId) {
+    const currentPhone = db.prepare("SELECT phone FROM customers WHERE id = ?").get(customerId)?.phone;
+    if (normalizePhoneForComparison(currentPhone) === normalizedPhone) return;
+  }
+
+  const duplicate = db.prepare(`
+    SELECT id, phone
+    FROM customers
+    WHERE id != COALESCE(?, -1)
+      AND phone IS NOT NULL
+  `).all(customerId).some((customer) =>
+    normalizePhoneForComparison(customer.phone) === normalizedPhone,
+  );
+
+  if (duplicate) throw new Error("A customer with this phone number already exists");
+}
+
 function getCustomer(db, id) {
   const customer = db.prepare("SELECT * FROM customers WHERE id = ?").get(id);
   if (!customer) return undefined;
@@ -170,12 +194,13 @@ function registerCustomerHandlers() {
   ipcMain.handle("customers:create", (_event, input) => {
     const customer = normalizeCustomer(input);
     const db = getDatabase();
-    const encryptedAadhaar = encryptAadhaar(customer.aadhaarNumber);
-    const imageFileName = input.profileImageDataUrl
-      ? storeProfileImage(input.profileImageDataUrl)
-      : null;
-    try {
-      const result = db.prepare(`
+    let imageFileName = null;
+    const createCustomer = db.transaction(() => {
+      ensureUniquePhone(db, customer.phone);
+      imageFileName = input.profileImageDataUrl
+        ? storeProfileImage(input.profileImageDataUrl)
+        : null;
+      return db.prepare(`
         INSERT INTO customers
           (name, phone, address, email, aadhaar_number, gst_number, profile_image_path)
         VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -184,10 +209,13 @@ function registerCustomerHandlers() {
         customer.phone,
         customer.address,
         customer.email,
-        encryptedAadhaar,
+        encryptAadhaar(customer.aadhaarNumber),
         customer.gstNumber,
         imageFileName,
       );
+    });
+    try {
+      const result = createCustomer();
       return getCustomer(db, Number(result.lastInsertRowid));
     } catch (error) {
       if (imageFileName) removeProfileImage(imageFileName);
@@ -201,27 +229,30 @@ function registerCustomerHandlers() {
     const current = db.prepare("SELECT * FROM customers WHERE id = ?").get(customer.id);
     if (!current) throw new Error("Customer not found");
 
-    const encryptedAadhaar = encryptAadhaar(customer.aadhaarNumber);
     const imageFileName = input.profileImageDataUrl
       ? storeProfileImage(input.profileImageDataUrl)
       : null;
     const imagePath = input.removeProfileImage ? null : imageFileName ?? current.profile_image_path;
     try {
-      const result = db.prepare(`
-        UPDATE customers
-        SET name = ?, phone = ?, address = ?, email = ?, aadhaar_number = ?,
-            gst_number = ?, profile_image_path = ?
-        WHERE id = ?
-      `).run(
-        customer.name,
-        customer.phone,
-        customer.address,
-        customer.email,
-        encryptedAadhaar,
-        customer.gstNumber,
-        imagePath,
-        customer.id,
-      );
+      const updateCustomer = db.transaction(() => {
+        ensureUniquePhone(db, customer.phone, customer.id);
+        return db.prepare(`
+          UPDATE customers
+          SET name = ?, phone = ?, address = ?, email = ?, aadhaar_number = ?,
+              gst_number = ?, profile_image_path = ?
+          WHERE id = ?
+        `).run(
+          customer.name,
+          customer.phone,
+          customer.address,
+          customer.email,
+          encryptAadhaar(customer.aadhaarNumber),
+          customer.gstNumber,
+          imagePath,
+          customer.id,
+        );
+      });
+      const result = updateCustomer();
       if (result.changes !== 1) throw new Error("Customer not found");
 
       const saved = getCustomer(db, customer.id);

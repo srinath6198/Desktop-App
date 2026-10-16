@@ -59,6 +59,11 @@ existing bill calculation of 5%.
 The dashboard reads sales totals, bill counts, product stock, customers, recent
 invoices, and this month's best-selling flowers from SQLite through Electron IPC.
 
+The Reports screen reads saved sales from SQLite and supports start/end date
+filters, customer filtering (including walk-in sales), revenue and payment
+summaries, top-selling products, invoice details, and CSV export of the filtered
+invoices.
+
 The Stock Entry screen lists all products, including inactive records, and
 supports name/code search, category and stock-status filters, minimum-stock
 levels, and paginated results. Adding stock records a stock movement and updates

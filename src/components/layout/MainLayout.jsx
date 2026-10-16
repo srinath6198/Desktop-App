@@ -1,9 +1,10 @@
 
 import { useEffect, useState } from "react";
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   Cloud,
   CloudUpload,
+  LoaderCircle,
   Menu,
   LayoutDashboard,
   ReceiptText,
@@ -73,6 +74,9 @@ const navigation = [
 function MainLayout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [settingsExpanded, setSettingsExpanded] = useState(() =>
+    window.location.hash.startsWith("#/settings")
+  );
   const [shopSettings, setShopSettings] = useState(null);
   const [cloudStatus, setCloudStatus] = useState("checking");
   const [backupDialogOpen, setBackupDialogOpen] = useState(false);
@@ -82,6 +86,7 @@ function MainLayout() {
   const [backupError, setBackupError] = useState("");
   const [backupMessage, setBackupMessage] = useState("");
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     settingsService.get().then(setShopSettings).catch(() => { })
@@ -182,10 +187,17 @@ function MainLayout() {
               <input autoComplete="new-password" disabled={backupBusy} minLength={12} onChange={(event) => setBackupPassphraseConfirmation(event.target.value)} required type="password" value={backupPassphraseConfirmation} />
             </label>
             <small>Use the same passphrase when restoring. It is not saved or sent to the server.</small>
+            {backupBusy && (
+              <p aria-live="polite" className="backup-operation-status" role="status">
+                <LoaderCircle aria-hidden="true" className="backup-spinner" size={17} />
+                Encrypting and uploading the backup. Please keep this window open.
+              </p>
+            )}
             <div className="quick-backup-actions">
               <button className="button button-secondary" disabled={backupBusy} onClick={() => setBackupDialogOpen(false)} type="button">Cancel</button>
               <button className="button button-primary" disabled={backupBusy || backupPassphrase.length < 12 || backupPassphrase !== backupPassphraseConfirmation} type="submit">
-                <CloudUpload size={16} /> {backupBusy ? "Backing up..." : "Back up now"}
+                {backupBusy ? <LoaderCircle aria-hidden="true" className="backup-spinner" size={16} /> : <CloudUpload size={16} />}
+                {backupBusy ? "Backing up..." : "Back up now"}
               </button>
             </div>
           </form>
@@ -242,22 +254,52 @@ function MainLayout() {
 
               {section.items.map((item) => {
                 const Icon = item.icon;
+                const itemIsActive = item.children
+                  ? item.children.some((child) => location.pathname === child.path)
+                  : false;
 
                 return (
                   <div className="navigation-item-group" key={item.path}>
-                    <NavLink
-                      to={item.path}
-                      end={!item.children && item.path === "/"}
-                      className={({ isActive }) =>
-                        `navigation-link ${isActive ? "active" : ""}`
-                      }
-                      onClick={closeMobileSidebar}
-                      title={sidebarCollapsed ? item.label : undefined}
-                    >
-                      <Icon size={19} strokeWidth={1.8} />
-                      <span className="navigation-label">{item.label}</span>
-                    </NavLink>
-                    {item.children && !sidebarCollapsed && (
+                    {item.children ? (
+                      <button
+                        aria-expanded={settingsExpanded}
+                        className={`navigation-link navigation-parent ${itemIsActive ? "active" : ""}`}
+                        onClick={() => {
+                          if (sidebarCollapsed) {
+                            setSidebarCollapsed(false);
+                            setSettingsExpanded(true);
+                          } else {
+                            setSettingsExpanded((expanded) => !expanded);
+                          }
+                        }}
+                        title={sidebarCollapsed ? item.label : undefined}
+                        type="button"
+                      >
+                        <Icon size={19} strokeWidth={1.8} />
+                        <span className="navigation-label">{item.label}</span>
+                        {!sidebarCollapsed && (
+                          <ChevronDown
+                            aria-hidden="true"
+                            className={`navigation-chevron ${settingsExpanded ? "expanded" : ""}`}
+                            size={15}
+                          />
+                        )}
+                      </button>
+                    ) : (
+                      <NavLink
+                        to={item.path}
+                        end={item.path === "/"}
+                        className={({ isActive }) =>
+                          `navigation-link ${isActive ? "active" : ""}`
+                        }
+                        onClick={closeMobileSidebar}
+                        title={sidebarCollapsed ? item.label : undefined}
+                      >
+                        <Icon size={19} strokeWidth={1.8} />
+                        <span className="navigation-label">{item.label}</span>
+                      </NavLink>
+                    )}
+                    {item.children && !sidebarCollapsed && settingsExpanded && (
                       <div aria-label={`${item.label} submenu`} className="navigation-submenu">
                         {item.children.map((child) => (
                           <NavLink
@@ -265,7 +307,10 @@ function MainLayout() {
                               `navigation-sublink ${isActive ? "active" : ""}`
                             }
                             key={child.path}
-                            onClick={closeMobileSidebar}
+                            onClick={() => {
+                              setSettingsExpanded(true);
+                              closeMobileSidebar();
+                            }}
                             to={child.path}
                           >
                             {child.label}

@@ -14,8 +14,10 @@ import { toBillReceipt } from "../../utils/billReceipt"
 import { shareBillPdf as saveAndOpenBillPdf } from "../../utils/shareBillPdf"
 import AddCustomer from "../customers/AddCustomer"
 import ExtraChargeModal, { ExtraChargeSummary } from "../../components/billing/ExtraCharge"
+import CustomerSearchSelect from "../../components/billing/CustomerSearchSelect"
 
 const DEFAULT_CHARGES = { parcelCharge: 0, travelCharge: 0, deliveryCharge: 0, otherCharge: 0, otherChargeLabel: "Other" }
+const WALK_IN_CUSTOMER = "__walk_in_customer__"
 
 function NewBill() {
   const [query, setQuery] = useState("")
@@ -94,6 +96,13 @@ function NewBill() {
       })
       .sort((left, right) => left.name.localeCompare(right.name))
   }, [products, normalizedQuery, selectedCategory])
+  const customerOptions = useMemo(() => [
+    { value: WALK_IN_CUSTOMER, label: "Walk-in customer" },
+    ...customers.map((customer) => ({
+      value: String(customer.id),
+      label: `${customer.name}${customer.phone ? ` · ${customer.phone}` : ""}`,
+    })),
+  ], [customers])
   function showToast(message, type = "success") {
     setToast({ message, type })
   }
@@ -372,10 +381,12 @@ function NewBill() {
             <div className="bill-checkout-fields">
               <label className="form-field">
                 Customer
-                <select disabled={loading || saving} onChange={(event) => setCustomerId(event.target.value)} value={customerId}>
-                  <option value="">Walk-in customer</option>
-                  {customers.map((item) => <option key={item.id} value={item.id}>{item.name}{item.phone ? ` · ${item.phone}` : ""}</option>)}
-                </select>
+                <CustomerSearchSelect
+                  disabled={loading || saving}
+                  onChange={(value) => setCustomerId(value === WALK_IN_CUSTOMER ? "" : value)}
+                  options={customerOptions}
+                  value={customerId || WALK_IN_CUSTOMER}
+                />
               </label>
               <label className="form-field payment-field">
                 Payment method

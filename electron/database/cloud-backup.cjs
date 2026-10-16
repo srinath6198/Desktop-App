@@ -156,7 +156,7 @@ async function requestBackupApi(pathname, options = {}, timeoutMs = 120_000) {
 }
 
 async function testConnection() {
-  const response = await requestBackupApi("/v1/status", {}, 8_000);
+  const response = await requestBackupApi("/v1/status", {}, 45_000);
   return response.json();
 }
 

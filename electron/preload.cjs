@@ -62,6 +62,10 @@ contextBridge.exposeInMainWorld("desktopAPI", {
     summary: (period) => ipcRenderer.invoke("dashboard:summary", period),
   },
 
+  reports: {
+    sales: (filters) => ipcRenderer.invoke("reports:sales", filters),
+  },
+
   settings: {
     get: () => ipcRenderer.invoke("settings:get"),
     save: (settings) => ipcRenderer.invoke("settings:save", settings),

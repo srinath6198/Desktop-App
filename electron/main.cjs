@@ -20,6 +20,7 @@ const { registerDashboardHandlers } = require("./ipc/dashboard.ipc.cjs");
 const { registerSettingsHandlers } = require("./ipc/settings.ipc.cjs");
 const { registerAppHandlers } = require("./ipc/app.ipc.cjs");
 const { registerBackupHandlers } = require("./ipc/backup.ipc.cjs");
+const { registerReportHandlers } = require("./ipc/reports.ipc.cjs");
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -54,6 +55,7 @@ app.whenReady().then(() => {
   registerDashboardHandlers();
   registerSettingsHandlers();
   registerBackupHandlers();
+  registerReportHandlers();
   registerAppHandlers();
 
   createWindow();

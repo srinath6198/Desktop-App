@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { Cloud, Download, LockKeyhole, Upload } from "lucide-react"
+import { Cloud, Download, LoaderCircle, LockKeyhole, Upload } from "lucide-react"
 import { Panel } from "../../components/ui/PageUI"
 import { cloudBackupService } from "../../services/cloud-backup.service"
 
@@ -9,7 +9,8 @@ function OnlineDataBase() {
   const [passphrase, setPassphrase] = useState("")
   const [confirmPassphrase, setConfirmPassphrase] = useState("")
   const [configured, setConfigured] = useState(false)
-  const [busy, setBusy] = useState(false)
+  const [busyAction, setBusyAction] = useState("")
+  const busy = Boolean(busyAction)
   const [message, setMessage] = useState("")
   const [error, setError] = useState("")
   const [backupInfo, setBackupInfo] = useState(null)
@@ -27,7 +28,7 @@ function OnlineDataBase() {
   }, [])
 
   async function saveConnection() {
-    setBusy(true)
+    setBusyAction("saving")
     setError("")
     setMessage("")
     try {
@@ -39,12 +40,12 @@ function OnlineDataBase() {
     } catch (saveError) {
       setError(saveError.message || "Unable to save the backup connection.")
     } finally {
-      setBusy(false)
+      setBusyAction("")
     }
   }
 
   async function testConnection() {
-    setBusy(true)
+    setBusyAction("testing")
     setError("")
     setMessage("")
     try {
@@ -56,7 +57,7 @@ function OnlineDataBase() {
     } catch (connectionError) {
       setError(connectionError.message || "Unable to connect to the backup service.")
     } finally {
-      setBusy(false)
+      setBusyAction("")
     }
   }
 
@@ -69,7 +70,7 @@ function OnlineDataBase() {
       setError("The backup passphrases do not match.")
       return
     }
-    setBusy(true)
+    setBusyAction("backup")
     setError("")
     setMessage("")
     try {
@@ -81,7 +82,7 @@ function OnlineDataBase() {
     } catch (backupError) {
       setError(backupError.message || "Unable to create the cloud backup.")
     } finally {
-      setBusy(false)
+      setBusyAction("")
     }
   }
 
@@ -93,7 +94,7 @@ function OnlineDataBase() {
     if (!window.confirm("Restore the latest cloud backup? This replaces the local database. Make a cloud backup first if you need to preserve current records.")) {
       return
     }
-    setBusy(true)
+    setBusyAction("restore")
     setError("")
     setMessage("")
     try {
@@ -103,13 +104,13 @@ function OnlineDataBase() {
       window.setTimeout(() => window.location.reload(), 500)
     } catch (restoreError) {
       setError(restoreError.message || "Unable to restore the cloud backup.")
-      setBusy(false)
+      setBusyAction("")
     }
   }
 
   async function removeConnection() {
     if (!window.confirm("Remove the saved backup API URL and access token from this device?")) return
-    setBusy(true)
+    setBusyAction("removing")
     setError("")
     setMessage("")
     try {
@@ -122,7 +123,7 @@ function OnlineDataBase() {
     } catch (clearError) {
       setError(clearError.message || "Unable to remove the saved backup connection.")
     } finally {
-      setBusy(false)
+      setBusyAction("")
     }
   }
 
@@ -159,9 +160,23 @@ function OnlineDataBase() {
           <input autoComplete="new-password" disabled={busy || !configured} onChange={(event) => setConfirmPassphrase(event.target.value)} placeholder="Re-enter the same passphrase" type="password" value={confirmPassphrase} />
         </label>
         <div className="span-2 toolbar">
-          <button className="button button-primary" disabled={busy || !configured || passphrase.length < 12 || passphrase !== confirmPassphrase} onClick={createBackup} type="button"><Upload size={16} /> {busy ? "Working..." : "Back up now"}</button>
-          <button className="button button-secondary" disabled={busy || !configured || !backupInfo?.hasBackup || passphrase.length < 12} onClick={restoreBackup} type="button"><Download size={16} /> Restore latest backup</button>
+          <button className="button button-primary" disabled={busy || !configured || passphrase.length < 12 || passphrase !== confirmPassphrase} onClick={createBackup} type="button">
+            {busyAction === "backup" ? <LoaderCircle aria-hidden="true" className="backup-spinner" size={16} /> : <Upload size={16} />}
+            {busyAction === "backup" ? "Backing up..." : "Back up now"}
+          </button>
+          <button className="button button-secondary" disabled={busy || !configured || !backupInfo?.hasBackup || passphrase.length < 12} onClick={restoreBackup} type="button">
+            {busyAction === "restore" ? <LoaderCircle aria-hidden="true" className="backup-spinner" size={16} /> : <Download size={16} />}
+            {busyAction === "restore" ? "Restoring..." : "Restore latest backup"}
+          </button>
         </div>
+        {(busyAction === "backup" || busyAction === "restore") && (
+          <p aria-live="polite" className="span-2 backup-operation-status" role="status">
+            <LoaderCircle aria-hidden="true" className="backup-spinner" size={17} />
+            {busyAction === "backup"
+              ? "Creating encrypted backup and uploading it to the cloud. Please keep this window open."
+              : "Downloading, decrypting, and validating the backup. Please keep this window open."}
+          </p>
+        )}
         <p className="span-2 muted-text">Only the encrypted SQLite database is uploaded; product and customer image files remain on this device. Keep your passphrase safe; it cannot be recovered. This is a manual backup for this device, not live sync. Customer Aadhaar encryption is tied to this computer, so restoring that data on a different computer may not allow it to be decrypted.</p>
       </div>
     </Panel>
