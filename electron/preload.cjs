@@ -67,4 +67,13 @@ contextBridge.exposeInMainWorld("desktopAPI", {
     save: (settings) => ipcRenderer.invoke("settings:save", settings),
     selectLogo: () => ipcRenderer.invoke("settings:select-logo"),
   },
+
+  cloudBackup: {
+    getConfig: () => ipcRenderer.invoke("backup:config:get"),
+    saveConfig: (config) => ipcRenderer.invoke("backup:config:save", config),
+    clearConfig: () => ipcRenderer.invoke("backup:config:clear"),
+    testConnection: () => ipcRenderer.invoke("backup:connection:test"),
+    create: (passphrase) => ipcRenderer.invoke("backup:create", passphrase),
+    restore: (passphrase) => ipcRenderer.invoke("backup:restore", passphrase),
+  },
 });

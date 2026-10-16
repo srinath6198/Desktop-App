@@ -12,6 +12,12 @@ dist
 dist-ssr
 *.local
 
+# Local secrets and environment files
+atlas-credentials.env
+.env
+.env.*
+!.env.example
+
 # Electron build output
 release*/
 out/

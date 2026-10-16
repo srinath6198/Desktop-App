@@ -76,6 +76,32 @@ movement entries. Purchase history can be filtered by a date range; returns can
 be partial, are limited to purchased quantities and available stock, and reduce
 inventory while retaining the original purchase and return history.
 
+## Encrypted cloud backup
+
+The Settings screen can upload and restore an encrypted snapshot of the local
+SQLite database. Product and customer image files remain local. It is a manual backup for one device, not live synchronization.
+The passphrase encrypts the snapshot on the device before upload; it is never
+sent to the backend. Keep the passphrase safe because it cannot be recovered.
+Restoring replaces the local database. Customer Aadhaar encryption uses
+Electron's device secure storage, so an Aadhaar value restored on another
+computer may not be decryptable there.
+
+The backup API is a separate Node.js service in `backend/`. Deploy the included
+`render.yaml` Blueprint from the project root, then set these secrets in the
+Render service environment:
+
+- `MONGODB_URI`: the **newly rotated** Atlas connection string. The password
+  previously shared must be changed in Atlas before using this API.
+- `BACKUP_API_TOKEN`: a random secret of at least 32 characters. Configure it
+  only in Render and enter it in the app's Settings screen.
+
+Give the Atlas database user access only to the `flower_billing` database and
+restrict Atlas Network Access to the backend's outbound IP addresses. Do not
+allow access from all IP addresses. Once Render deploys, copy its HTTPS service
+URL into Settings and save the same `BACKUP_API_TOKEN`. The API token is stored
+encrypted using Electron secure storage on this computer. Never put the Atlas
+URI, Atlas password, or backend token in frontend code or a committed env file.
+
 ## Native SQLite dependency
 
 `better-sqlite3` includes a Windows N-API prebuilt binary, which is compatible

@@ -13,7 +13,8 @@ import CustomerCredit from "../pages/customers/CustomerCredit";
 import Suppliers from "../pages/suppliers/Suppliers";
 import Inventory from "../pages/inventory/Inventory";
 import Reports from "../pages/reports/Reports";
-import Settings from "../pages/settings/Settings";
+import ProfileSettings from "../pages/settings/ProfileSettings";
+import BackupSettings from "../pages/settings/BackupSettings";
 import StockEntry from "../pages/stock/StockEntery";
 
 function AppRoutes() {
@@ -33,7 +34,11 @@ function AppRoutes() {
         <Route path="inventory" element={<Inventory />} />
         <Route path="stock-entry" element={<StockEntry />} />
         <Route path="reports" element={<Reports />} />
-        <Route path="settings" element={<Settings />} />
+        <Route path="settings">
+          <Route index element={<Navigate replace to="profile" />} />
+          <Route path="profile" element={<ProfileSettings />} />
+          <Route path="backup" element={<BackupSettings />} />
+        </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>

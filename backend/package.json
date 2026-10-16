@@ -1,0 +1,12 @@
+{
+  "name": "flower-billing-backup-api",
+  "private": true,
+  "version": "1.0.0",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.cjs"
+  },
+  "dependencies": {
+    "mongodb": "^6.17.0"
+  }
+}

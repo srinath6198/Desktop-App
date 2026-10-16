@@ -1,7 +1,9 @@
 
 import { useEffect, useState } from "react";
-import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
+  Cloud,
+  CloudUpload,
   Menu,
   LayoutDashboard,
   ReceiptText,
@@ -15,13 +17,14 @@ import {
   ChartNoAxesCombined,
   Settings,
   Bell,
-  Search,
   ChevronDown,
   PanelLeftClose,
   PanelLeftOpen,
+  WifiOff,
 } from "lucide-react";
 
 import { settingsService } from "../../services/settings.service";
+import { cloudBackupService } from "../../services/cloud-backup.service";
 import "./MainLayout.scss";
 
 const navigation = [
@@ -54,41 +57,140 @@ const navigation = [
         path: "/reports",
         icon: ChartNoAxesCombined,
       },
-      { label: "Settings", path: "/settings", icon: Settings },
+      {
+        label: "Settings",
+        path: "/settings",
+        icon: Settings,
+        children: [
+          { label: "Profile Settings", path: "/settings/profile" },
+          { label: "Backup Settings", path: "/settings/backup" },
+        ],
+      },
     ],
   },
 ];
-
-const pageTitles = {
-  "/": "Dashboard",
-  "/billing/new": "New Bill",
-  "/billing/history": "Sales History",
-  "/products": "Products",
-  "/purchases": "Purchases",
-  "/customers": "Customers",
-  "/customers/credit": "Customer Credit",
-  "/suppliers": "Suppliers",
-  "/inventory": "Inventory",
-  "/reports": "Reports",
-  "/settings": "Settings",
-};
 
 function MainLayout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [shopSettings, setShopSettings] = useState(null);
+  const [cloudStatus, setCloudStatus] = useState("checking");
+  const [backupDialogOpen, setBackupDialogOpen] = useState(false);
+  const [backupPassphrase, setBackupPassphrase] = useState("");
+  const [backupPassphraseConfirmation, setBackupPassphraseConfirmation] = useState("");
+  const [backupBusy, setBackupBusy] = useState(false);
+  const [backupError, setBackupError] = useState("");
+  const [backupMessage, setBackupMessage] = useState("");
+  const navigate = useNavigate();
 
   useEffect(() => {
     settingsService.get().then(setShopSettings).catch(() => { })
   }, []);
 
-  const location = useLocation();
-  const pageTitle = pageTitles[location.pathname] || "Flower Billing";
+  useEffect(() => {
+    let mounted = true;
+    let checking = false;
+
+    async function checkCloudStatus() {
+      if (!navigator.onLine) {
+        setCloudStatus("offline");
+        return;
+      }
+      if (checking) return;
+      checking = true;
+      try {
+        const config = await cloudBackupService.getConfig();
+        if (!config.isConfigured) {
+          if (mounted) setCloudStatus("offline");
+          return;
+        }
+        await cloudBackupService.testConnection();
+        if (mounted) setCloudStatus("online");
+      } catch {
+        if (mounted) setCloudStatus("offline");
+      } finally {
+        checking = false;
+      }
+    }
+
+    function updateNetworkStatus() {
+      if (!navigator.onLine) setCloudStatus("offline");
+      else checkCloudStatus();
+    }
+
+    checkCloudStatus();
+    const intervalId = window.setInterval(checkCloudStatus, 30_000);
+    window.addEventListener("online", updateNetworkStatus);
+    window.addEventListener("offline", updateNetworkStatus);
+
+    return () => {
+      mounted = false;
+      window.clearInterval(intervalId);
+      window.removeEventListener("online", updateNetworkStatus);
+      window.removeEventListener("offline", updateNetworkStatus);
+    };
+  }, []);
 
   const closeMobileSidebar = () => setMobileSidebarOpen(false);
 
+  async function createHeaderBackup(event) {
+    event.preventDefault();
+    if (backupPassphrase.length < 12) {
+      setBackupError("Use a backup passphrase with at least 12 characters.");
+      return;
+    }
+    if (backupPassphrase !== backupPassphraseConfirmation) {
+      setBackupError("The backup passphrases do not match.");
+      return;
+    }
+
+    setBackupBusy(true);
+    setBackupError("");
+    setBackupMessage("");
+    try {
+      const result = await cloudBackupService.create(backupPassphrase);
+      setBackupMessage(`Backup completed at ${new Date(result.createdAt).toLocaleString()}.`);
+      setBackupPassphrase("");
+      setBackupPassphraseConfirmation("");
+      setBackupDialogOpen(false);
+    } catch (error) {
+      setBackupError(error.message || "Unable to create the cloud backup.");
+    } finally {
+      setBackupBusy(false);
+    }
+  }
+
   return (
     <div className="app-layout">
+      {backupDialogOpen && (
+        <div
+          className="backup-dialog-backdrop"
+          onClick={(event) => {
+            if (event.target === event.currentTarget && !backupBusy) setBackupDialogOpen(false);
+          }}
+        >
+          <form aria-labelledby="quick-backup-title" className="quick-backup-dialog" onSubmit={createHeaderBackup} role="dialog" aria-modal="true">
+            <h2 id="quick-backup-title"><CloudUpload size={20} /> Back up database</h2>
+            <p>Encrypts this device's SQLite database before uploading it to your configured cloud backup.</p>
+            {backupError && <p className="error-banner" role="alert">{backupError}</p>}
+            <label className="form-field">
+              Backup passphrase
+              <input autoComplete="new-password" disabled={backupBusy} minLength={12} onChange={(event) => setBackupPassphrase(event.target.value)} required type="password" value={backupPassphrase} />
+            </label>
+            <label className="form-field">
+              Confirm passphrase
+              <input autoComplete="new-password" disabled={backupBusy} minLength={12} onChange={(event) => setBackupPassphraseConfirmation(event.target.value)} required type="password" value={backupPassphraseConfirmation} />
+            </label>
+            <small>Use the same passphrase when restoring. It is not saved or sent to the server.</small>
+            <div className="quick-backup-actions">
+              <button className="button button-secondary" disabled={backupBusy} onClick={() => setBackupDialogOpen(false)} type="button">Cancel</button>
+              <button className="button button-primary" disabled={backupBusy || backupPassphrase.length < 12 || backupPassphrase !== backupPassphraseConfirmation} type="submit">
+                <CloudUpload size={16} /> {backupBusy ? "Backing up..." : "Back up now"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
       {mobileSidebarOpen && (
         <button
           type="button"
@@ -142,19 +244,36 @@ function MainLayout() {
                 const Icon = item.icon;
 
                 return (
-                  <NavLink
-                    key={item.path}
-                    to={item.path}
-                    end={item.path === "/"}
-                    className={({ isActive }) =>
-                      `navigation-link ${isActive ? "active" : ""}`
-                    }
-                    onClick={closeMobileSidebar}
-                    title={sidebarCollapsed ? item.label : undefined}
-                  >
-                    <Icon size={19} strokeWidth={1.8} />
-                    <span className="navigation-label">{item.label}</span>
-                  </NavLink>
+                  <div className="navigation-item-group" key={item.path}>
+                    <NavLink
+                      to={item.path}
+                      end={!item.children && item.path === "/"}
+                      className={({ isActive }) =>
+                        `navigation-link ${isActive ? "active" : ""}`
+                      }
+                      onClick={closeMobileSidebar}
+                      title={sidebarCollapsed ? item.label : undefined}
+                    >
+                      <Icon size={19} strokeWidth={1.8} />
+                      <span className="navigation-label">{item.label}</span>
+                    </NavLink>
+                    {item.children && !sidebarCollapsed && (
+                      <div aria-label={`${item.label} submenu`} className="navigation-submenu">
+                        {item.children.map((child) => (
+                          <NavLink
+                            className={({ isActive }) =>
+                              `navigation-sublink ${isActive ? "active" : ""}`
+                            }
+                            key={child.path}
+                            onClick={closeMobileSidebar}
+                            to={child.path}
+                          >
+                            {child.label}
+                          </NavLink>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 );
               })}
             </div>
@@ -196,7 +315,7 @@ function MainLayout() {
           </div>
 
           <div className="header-actions">
-            <label className="header-search">
+            {/* <label className="header-search">
               <Search size={18} />
               <input
                 type="search"
@@ -204,9 +323,32 @@ function MainLayout() {
                 aria-label="Search"
               />
               <kbd>⌘ K</kbd>
-            </label>
-
-            <button
+            </label> */}
+           <div
+             aria-label={cloudStatus === "online" ? "Cloud backup connected" : "Cloud backup disconnected"}
+             className={`cloud-connection-status ${cloudStatus}`}
+             role="status"
+             title={cloudStatus === "online" ? "Cloud backup service is reachable" : "Cloud backup service is not reachable"}
+           >
+             {cloudStatus === "online" ? <Cloud size={16} /> : <WifiOff size={16} />}
+             <span>{cloudStatus === "online" ? "Cloud online" : "Cloud offline"}</span>
+           </div>
+           <button
+             className="button button-primary header-backup-button"
+             disabled={cloudStatus === "checking"}
+             onClick={() => {
+               setBackupError("");
+               setBackupMessage("");
+               if (cloudStatus === "online") setBackupDialogOpen(true);
+               else navigate("/settings");
+             }}
+             title={cloudStatus === "online" ? "Back up your database" : "Configure and connect cloud backup in Settings"}
+             type="button"
+           >
+             <CloudUpload size={16} /> {cloudStatus === "online" ? "Backup" : "Connect backup"}
+           </button>
+           {backupMessage && <span className="header-backup-message" role="status">{backupMessage}</span>}
+           <button
               type="button"
               className="notification-btn"
               aria-label="Notifications"
