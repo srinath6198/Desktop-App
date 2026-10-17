@@ -158,3 +158,12 @@ CREATE TABLE IF NOT EXISTS app_settings (
   setting_key TEXT PRIMARY KEY,
   setting_value TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS notifications (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  type TEXT NOT NULL DEFAULT 'info',
+  title TEXT NOT NULL,
+  message TEXT NOT NULL DEFAULT '',
+  is_read INTEGER NOT NULL DEFAULT 0 CHECK (is_read IN (0, 1)),
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);

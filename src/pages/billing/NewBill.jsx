@@ -273,7 +273,9 @@ function NewBill() {
             <input onChange={(event) => setQuery(event.target.value)} placeholder="Search product, code or category..." value={query} />
           </label>
           <div className="panel-heading">
-            <div><h3>Choose products</h3><p>Tap a product to add it to the bill</p></div>
+            <div><h3>Choose products</h3>
+            {/* <p>Tap a product to add it to the bill</p> */}
+            </div>
             <Badge tone="neutral">{visibleProductGroups.length} products</Badge>
           </div>
           <div aria-label="Filter products by category" className="product-category-list" role="group">

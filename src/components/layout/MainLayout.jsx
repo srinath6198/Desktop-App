@@ -17,7 +17,6 @@ import {
   Boxes,
   ChartNoAxesCombined,
   Settings,
-  Bell,
   ChevronDown,
   PanelLeftClose,
   PanelLeftOpen,
@@ -26,6 +25,7 @@ import {
 
 import { settingsService } from "../../services/settings.service";
 import { cloudBackupService } from "../../services/cloud-backup.service";
+import Notification from "../../pages/Notification/Notification";
 import "./MainLayout.scss";
 
 const navigation = [
@@ -47,7 +47,7 @@ const navigation = [
       { label: "Customer Credit", path: "/customers/credit", icon: Wallet },
       { label: "Suppliers", path: "/suppliers", icon: Truck },
       { label: "Inventory", path: "/inventory", icon: Boxes },
-      { label: "Extra Charges", path: "/extra-charges", icon: Boxes },
+      // { label: "Extra Charges", path: "/extra-charges", icon: Boxes },
     ],
   },
   {
@@ -393,17 +393,7 @@ function MainLayout() {
              <CloudUpload size={16} /> {cloudStatus === "online" ? "Backup" : "Connect backup"}
            </button>
            {backupMessage && <span className="header-backup-message" role="status">{backupMessage}</span>}
-           <button
-              type="button"
-              className="notification-btn"
-              aria-label="Notifications"
-              onClick={() =>
-                window.alert("No new notifications.")
-              }
-            >
-              <Bell size={20} />
-              <span className="notification-dot" />
-            </button>
+           <Notification />
 
             <div className="header-divider" />
 
@@ -414,11 +404,15 @@ function MainLayout() {
                 window.alert("Store profile settings can be added here.")
               }
             >
-              <div className="profile-avatar">FS</div>
+              <div className="profile-avatar">
+                {shopSettings?.logoDataUrl
+                  ? <img alt="Shop" src={shopSettings.logoDataUrl} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%" }} />
+                  : (shopSettings?.shopName?.slice(0, 2).toUpperCase() || "FS")}
+              </div>
 
               <div className="profile-details">
-                <strong>Shop Admin</strong>
-                <span>Administrator</span>
+                <strong>{shopSettings?.ownerName || shopSettings?.shopName || "Shop Admin"}</strong>
+                <span>{shopSettings?.mobileNumber || "Administrator"}</span>
               </div>
 
               <ChevronDown size={16} />

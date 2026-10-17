@@ -72,6 +72,16 @@ contextBridge.exposeInMainWorld("desktopAPI", {
     selectLogo: () => ipcRenderer.invoke("settings:select-logo"),
   },
 
+  notifications: {
+    list: () => ipcRenderer.invoke("notifications:list"),
+    unreadCount: () => ipcRenderer.invoke("notifications:unread-count"),
+    create: (n) => ipcRenderer.invoke("notifications:create", n),
+    markRead: (id) => ipcRenderer.invoke("notifications:mark-read", id),
+    markAllRead: () => ipcRenderer.invoke("notifications:mark-all-read"),
+    delete: (id) => ipcRenderer.invoke("notifications:delete", id),
+    clearAll: () => ipcRenderer.invoke("notifications:clear-all"),
+  },
+
   cloudBackup: {
     getConfig: () => ipcRenderer.invoke("backup:config:get"),
     saveConfig: (config) => ipcRenderer.invoke("backup:config:save", config),

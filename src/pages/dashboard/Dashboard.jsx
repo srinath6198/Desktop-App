@@ -4,6 +4,7 @@ import { Link } from "react-router-dom"
 import { Badge, PageTitle, Panel, StatCard } from "../../components/ui/PageUI"
 import { formatCurrency } from "../../data/demoData"
 import { dashboardService } from "../../services/dashboard.service"
+import { settingsService } from "../../services/settings.service"
 
 function formatQuantity(value) {
   return Number(value).toLocaleString("en-IN", { maximumFractionDigits: 3 })
@@ -33,10 +34,15 @@ function getGreeting() {
 function Dashboard() {
   const [period, setPeriod] = useState("week")
   const [requestState, setRequestState] = useState({ period: null, summary: null, error: "" })
+  const [ownerName, setOwnerName] = useState("")
   const [now] = useState(() => new Date())
   const loading = requestState.period !== period
   const summary = loading ? null : requestState.summary
   const error = loading ? "" : requestState.error
+
+  useEffect(() => {
+    settingsService.get().then((s) => setOwnerName(s.ownerName || s.shopName || "Admin")).catch(() => {})
+  }, [])
 
   useEffect(() => {
     let mounted = true
@@ -77,7 +83,7 @@ function Dashboard() {
       <PageTitle
         description="Here’s what’s happening at your flower shop today."
         eyebrow={dateLabel}
-        title={`${getGreeting()}, Shop Admin`}
+        title={`${getGreeting()}, ${ownerName}`}
         action={<Link className="button button-primary" to="/billing/new"><IndianRupee size={17} /> Create a bill</Link>}
       />
 
