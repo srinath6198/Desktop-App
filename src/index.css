@@ -3435,3 +3435,17 @@ input {
   color: #c0392b;
   background: #fff1f0;
 }
+
+.notif-section-label {
+  padding: 7px 14px 4px;
+  color: #9aa3ad;
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  border-bottom: 1px solid #f0f2f3;
+}
+
+.notif-live {
+  cursor: default;
+}

@@ -21,6 +21,8 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   WifiOff,
+  Sun,
+  Moon,
 } from "lucide-react";
 
 import { settingsService } from "../../services/settings.service";
@@ -78,6 +80,7 @@ function MainLayout() {
     window.location.hash.startsWith("#/settings")
   );
   const [shopSettings, setShopSettings] = useState(null);
+  const [theme, setTheme] = useState(() => localStorage.getItem("app-theme") || "light");
   const [cloudStatus, setCloudStatus] = useState("checking");
   const [backupDialogOpen, setBackupDialogOpen] = useState(false);
   const [backupPassphrase, setBackupPassphrase] = useState("");
@@ -91,6 +94,11 @@ function MainLayout() {
   useEffect(() => {
     settingsService.get().then(setShopSettings).catch(() => { })
   }, []);
+
+  useEffect(() => {
+    document.body.setAttribute("data-theme", theme);
+    localStorage.setItem("app-theme", theme);
+  }, [theme]);
 
   useEffect(() => {
     let mounted = true;
@@ -369,6 +377,16 @@ function MainLayout() {
               />
               <kbd>⌘ K</kbd>
             </label> */}
+
+           <button
+             aria-label="Toggle theme"
+             className="theme-toggle-btn"
+             onClick={() => setTheme((t) => t === "light" ? "dark" : "light")}
+             title={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}
+             type="button"
+           >
+             {theme === "light" ? <Moon size={17} /> : <Sun size={17} />}
+           </button>
            <div
              aria-label={cloudStatus === "online" ? "Cloud backup connected" : "Cloud backup disconnected"}
              className={`cloud-connection-status ${cloudStatus}`}
@@ -385,7 +403,7 @@ function MainLayout() {
                setBackupError("");
                setBackupMessage("");
                if (cloudStatus === "online") setBackupDialogOpen(true);
-               else navigate("/settings");
+               else navigate("/settings/backup");
              }}
              title={cloudStatus === "online" ? "Back up your database" : "Configure and connect cloud backup in Settings"}
              type="button"

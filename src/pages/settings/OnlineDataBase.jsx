@@ -3,6 +3,21 @@ import { Cloud, Download, LoaderCircle, LockKeyhole, Upload } from "lucide-react
 import { Panel } from "../../components/ui/PageUI"
 import { cloudBackupService } from "../../services/cloud-backup.service"
 
+function friendlyError(err) {
+  const msg = err?.message || ""
+  if (msg.includes("fetch failed") || msg.includes("ECONNREFUSED") || msg.includes("ENOTFOUND") || msg.includes("network"))
+    return "Cannot reach the backup server. Check your internet connection and make sure the API URL is correct."
+  if (msg.includes("401") || msg.includes("Unauthorized") || msg.includes("token"))
+    return "Access denied. The backup token is incorrect or expired — re-enter it and save the connection."
+  if (msg.includes("404") || msg.includes("Not Found"))
+    return "Backup server URL not found (404). Double-check the API URL you entered."
+  if (msg.includes("500") || msg.includes("Internal Server"))
+    return "The backup server returned an error (500). Try again in a moment."
+  if (msg.includes("timeout") || msg.includes("ETIMEDOUT"))
+    return "Connection timed out. The server may be starting up (Render free tier sleeps) — wait 30 seconds and try again."
+  return msg || "Something went wrong. Please try again."
+}
+
 function OnlineDataBase() {
   const [apiUrl, setApiUrl] = useState("")
   const [token, setToken] = useState("")
@@ -24,7 +39,7 @@ function OnlineDataBase() {
           setBackupInfo(await cloudBackupService.testConnection())
         }
       })
-      .catch((loadError) => setError(loadError.message || "Unable to load backup settings."))
+      .catch((loadError) => setError(friendlyError(loadError)))
   }, [])
 
   async function saveConnection() {
@@ -38,7 +53,7 @@ function OnlineDataBase() {
       setToken("")
       setMessage("Secure backup connection saved on this device.")
     } catch (saveError) {
-      setError(saveError.message || "Unable to save the backup connection.")
+      setError(friendlyError(saveError))
     } finally {
       setBusyAction("")
     }
@@ -55,7 +70,7 @@ function OnlineDataBase() {
         ? `Connected. Latest backup: ${new Date(status.createdAt).toLocaleString()}.`
         : "Connected. No cloud backup exists yet.")
     } catch (connectionError) {
-      setError(connectionError.message || "Unable to connect to the backup service.")
+      setError(friendlyError(connectionError))
     } finally {
       setBusyAction("")
     }
@@ -80,7 +95,7 @@ function OnlineDataBase() {
       setBackupInfo({ hasBackup: true, createdAt: result.createdAt, size: result.size })
       setMessage(`Encrypted database backup saved at ${new Date(result.createdAt).toLocaleString()}.`)
     } catch (backupError) {
-      setError(backupError.message || "Unable to create the cloud backup.")
+      setError(friendlyError(backupError))
     } finally {
       setBusyAction("")
     }
@@ -103,7 +118,7 @@ function OnlineDataBase() {
       setMessage("Database restored. Reloading the app…")
       window.setTimeout(() => window.location.reload(), 500)
     } catch (restoreError) {
-      setError(restoreError.message || "Unable to restore the cloud backup.")
+      setError(friendlyError(restoreError))
       setBusyAction("")
     }
   }
@@ -121,7 +136,7 @@ function OnlineDataBase() {
       setBackupInfo(null)
       setMessage("Saved backup connection removed from this device.")
     } catch (clearError) {
-      setError(clearError.message || "Unable to remove the saved backup connection.")
+      setError(friendlyError(clearError))
     } finally {
       setBusyAction("")
     }

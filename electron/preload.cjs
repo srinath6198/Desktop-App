@@ -80,6 +80,8 @@ contextBridge.exposeInMainWorld("desktopAPI", {
     markAllRead: () => ipcRenderer.invoke("notifications:mark-all-read"),
     delete: (id) => ipcRenderer.invoke("notifications:delete", id),
     clearAll: () => ipcRenderer.invoke("notifications:clear-all"),
+    lowStock: () => ipcRenderer.invoke("notifications:low-stock"),
+    pendingCredit: () => ipcRenderer.invoke("notifications:pending-credit"),
   },
 
   cloudBackup: {

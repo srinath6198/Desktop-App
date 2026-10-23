@@ -87,12 +87,16 @@ function NewBill() {
         variants: group.variants.sort((left, right) => left.variant.localeCompare(right.variant)),
       }))
       .filter((group) => {
-        const matchesSearch = group.variants.some((product) =>
+        const candidateVariants = selectedCategory
+          ? group.variants.filter((product) => product.category.trim() === selectedCategory)
+          : group.variants
+        if (candidateVariants.length === 0) return false
+        if (!normalizedQuery) return true
+        return candidateVariants.some((product) =>
           `${product.name} ${product.variant} ${product.productCode} ${product.category}`
             .toLocaleLowerCase()
             .includes(normalizedQuery),
         )
-        return matchesSearch && (!selectedCategory || group.variants.some((product) => product.category.trim() === selectedCategory))
       })
       .sort((left, right) => left.name.localeCompare(right.name))
   }, [products, normalizedQuery, selectedCategory])
