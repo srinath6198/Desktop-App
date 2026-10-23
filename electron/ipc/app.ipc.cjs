@@ -82,6 +82,7 @@ function normalizeBill(input) {
     payment: input.payment,
     paymentStatus: input.paymentStatus,
     subtotal: input.subtotal,
+    discount: Number.isFinite(Number(input.discount)) && Number(input.discount) > 0 ? Number(input.discount) : 0,
     tax: input.tax,
     total: input.total,
     amountPaid: input.amountPaid,
@@ -126,7 +127,7 @@ function buildBillHtml(bill) {
     shop.email && `Email: ${shop.email}`,
     bill.showGst && shop.gstNumber && `GSTIN: ${shop.gstNumber}`,
   ].filter(Boolean).map((line) => `<p>${escapeHtml(line)}</p>`).join("");
-  const taxLine = bill.showTax
+  const taxLine = bill.showTax && bill.tax > 0
     ? `<div class="totals-row"><span>Tax (${escapeHtml(bill.taxRate)}%)</span><span>${escapeHtml(formatCurrency(bill.tax))}</span></div>`
     : "";
   const dueStatus = bill.paymentStatus === "paid"
@@ -188,6 +189,7 @@ function buildBillHtml(bill) {
         </table>
         <section class="totals">
           <div class="totals-row"><span>Subtotal</span><span>${escapeHtml(formatCurrency(bill.subtotal))}</span></div>
+          ${bill.discount > 0 ? `<div class="totals-row"><span>Discount amount</span><span>− ${escapeHtml(formatCurrency(bill.discount))}</span></div>` : ""}
           ${taxLine}
           ${bill.parcelCharge > 0 ? `<div class="totals-row"><span>Parcel charge</span><span>${escapeHtml(formatCurrency(bill.parcelCharge))}</span></div>` : ""}
           ${bill.travelCharge > 0 ? `<div class="totals-row"><span>Travel charge</span><span>${escapeHtml(formatCurrency(bill.travelCharge))}</span></div>` : ""}

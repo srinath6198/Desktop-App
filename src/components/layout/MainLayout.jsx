@@ -11,6 +11,7 @@ import {
   History,
   Flower2,
   ShoppingCart,
+  TrendingUpDown,
   Users,
   Wallet,
   Truck,
@@ -43,6 +44,7 @@ const navigation = [
     title: "MANAGEMENT",
     items: [
       { label: "Products", path: "/products", icon: Flower2 },
+      { label: "Price Changes", path: "/price-changes", icon: TrendingUpDown },
       { label: "Purchases", path: "/purchases", icon: ShoppingCart },
       { label: "Stock Entry", path: "/stock-entry", icon: Boxes },
       { label: "Customers", path: "/customers", icon: Users },
@@ -379,40 +381,40 @@ function MainLayout() {
             </label> */}
 
 
-           <button
-             aria-label="Toggle theme"
-             className="theme-toggle-btn"
-             onClick={() => setTheme((t) => t === "light" ? "dark" : "light")}
-             title={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}
-             type="button"
-           >
-             {theme === "light" ? <Moon size={17} /> : <Sun size={17} />}
-           </button>
-           <div
-             aria-label={cloudStatus === "online" ? "Cloud backup connected" : "Cloud backup disconnected"}
-             className={`cloud-connection-status ${cloudStatus}`}
-             role="status"
-             title={cloudStatus === "online" ? "Cloud backup service is reachable" : "Cloud backup service is not reachable"}
-           >
-             {cloudStatus === "online" ? <Cloud size={16} /> : <WifiOff size={16} />}
-             <span>{cloudStatus === "online" ? "Cloud online" : "Cloud offline"}</span>
-           </div>
-           <button
-             className="button button-primary header-backup-button"
-             disabled={cloudStatus === "checking"}
-             onClick={() => {
-               setBackupError("");
-               setBackupMessage("");
-               if (cloudStatus === "online") setBackupDialogOpen(true);
-               else navigate("/settings/backup");
-             }}
-             title={cloudStatus === "online" ? "Back up your database" : "Configure and connect cloud backup in Settings"}
-             type="button"
-           >
-             <CloudUpload size={16} /> {cloudStatus === "online" ? "Backup" : "Connect backup"}
-           </button>
-           {backupMessage && <span className="header-backup-message" role="status">{backupMessage}</span>}
-           <Notification />
+            <button
+              aria-label="Toggle theme"
+              className="theme-toggle-btn"
+              onClick={() => setTheme((t) => t === "light" ? "dark" : "light")}
+              title={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}
+              type="button"
+            >
+              {theme === "light" ? <Moon size={17} /> : <Sun size={17} />}
+            </button>
+            <div
+              aria-label={cloudStatus === "online" ? "Cloud backup connected" : "Cloud backup disconnected"}
+              className={`cloud-connection-status ${cloudStatus}`}
+              role="status"
+              title={cloudStatus === "online" ? "Cloud backup service is reachable" : "Cloud backup service is not reachable"}
+            >
+              {cloudStatus === "online" ? <Cloud size={16} /> : <WifiOff size={16} />}
+              <span>{cloudStatus === "online" ? "Cloud online" : "Cloud offline"}</span>
+            </div>
+            <button
+              className="button button-primary header-backup-button"
+              disabled={cloudStatus === "checking"}
+              onClick={() => {
+                setBackupError("");
+                setBackupMessage("");
+                if (cloudStatus === "online") setBackupDialogOpen(true);
+                else navigate("/settings/backup");
+              }}
+              title={cloudStatus === "online" ? "Back up your database" : "Configure and connect cloud backup in Settings"}
+              type="button"
+            >
+              <CloudUpload size={16} /> {cloudStatus === "online" ? "Backup" : "Connect backup"}
+            </button>
+            {backupMessage && <span className="header-backup-message" role="status">{backupMessage}</span>}
+            <Notification />
 
             <div className="header-divider" />
 

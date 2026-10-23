@@ -1,0 +1,216 @@
+/* ─── Price Changes page ────────────────────────────────────────── */
+.price-changes-filters {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.price-changes-filters .field-search {
+  flex: 1;
+  min-width: 200px;
+}
+
+.price-changes-count {
+  font-size: 13px;
+  color: var(--text-muted, #777);
+  margin: 0 0 14px;
+}
+
+.price-changes-table-wrap {
+  overflow-x: auto;
+}
+
+.price-changes-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.price-changes-table th,
+.price-changes-table td {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--line, #e8ede9);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.price-changes-table th {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted, #777);
+  background: var(--surface-alt, #f7faf8);
+}
+
+.price-changes-table tbody tr:hover {
+  background: var(--hover, #f2f7f4);
+}
+
+.price-changes-table .col-right {
+  text-align: right;
+}
+
+.price-changes-table .col-center {
+  text-align: center;
+}
+
+.price-changes-table .table-empty-cell {
+  text-align: center;
+  padding: 36px 0;
+  color: var(--text-muted, #888);
+}
+
+.product-code-tag {
+  display: block;
+  font-size: 11px;
+  color: var(--text-muted, #888);
+  margin-top: 2px;
+}
+
+.selling-price-value {
+  color: var(--accent, #198754);
+}
+
+.price-row-actions {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+}
+
+.button-sm {
+  padding: 4px 10px !important;
+  font-size: 12px !important;
+}
+
+.price-select-filter {
+  padding: 6px 10px;
+  font-size: 13px;
+  border: 1px solid var(--line, #e8ede9);
+  border-radius: 4px;
+  background: #fff;
+  color: var(--text-primary, #333);
+}
+/* ─── Price edit modal ─────────────────────────────────────────── */
+.price-edit-modal {
+  width: min(100%, 90%);
+}
+
+.price-edit-product-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  background: var(--surface-alt, #f7faf8);
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.price-edit-product-info strong {
+  font-size: 14px;
+}
+
+.field-optional {
+  font-weight: 400;
+  color: var(--text-muted, #888);
+}
+
+/* ─── Price history modal ─────────────────────────────────────── */
+.price-history-modal {
+  width: min(100%, 520px);
+}
+
+.price-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.price-history-entry {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line, #e8ede9);
+}
+
+.price-history-entry:last-child {
+  border-bottom: none;
+}
+
+.price-history-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.price-history-prices {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+}
+
+.old-price {
+  color: var(--text-muted, #888);
+  text-decoration: line-through;
+  font-size: 13px;
+}
+
+.price-arrow {
+  color: var(--text-muted, #aaa);
+  font-size: 13px;
+}
+
+.new-price {
+  color: var(--accent, #198754);
+}
+
+.price-history-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 12px;
+}
+
+.price-history-date {
+  color: var(--text-muted, #888);
+}
+
+.price-history-reason {
+  color: var(--text-secondary, #555);
+  font-style: italic;
+}
+
+.price-diff-up {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #c0392b;
+}
+
+.price-diff-down {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #198754;
+}
+
+.price-diff-neutral {
+  font-size: 12px;
+  color: var(--text-muted, #888);
+}
+
+.loading-note {
+  text-align: center;
+  padding: 24px 0;
+  color: var(--text-muted, #888);
+}
