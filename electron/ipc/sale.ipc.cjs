@@ -29,7 +29,9 @@ function normalizeSale(input) {
     if (!Number.isFinite(quantity) || quantity <= 0 || quantity > 1_000_000) {
       throw new Error("Product quantities must be greater than zero");
     }
-    return { productId: item.productId, quantity };
+    const customPrice = input.customPrices?.[item.productId];
+    const price = customPrice != null ? Number(customPrice) : null;
+    return { productId: item.productId, quantity, customPrice: price != null && Number.isFinite(price) && price >= 0 ? price : null };
   });
   if (new Set(items.map((item) => item.productId)).size !== items.length) {
     throw new Error("Each product can appear only once in a bill");
@@ -49,6 +51,7 @@ function normalizeSale(input) {
     deliveryCharge: toCharge(input.deliveryCharge),
     otherCharge: toCharge(input.otherCharge),
     otherChargeLabel: typeof input.otherChargeLabel === "string" && input.otherChargeLabel.trim() ? input.otherChargeLabel.trim().slice(0, 60) : "Other",
+    discountAmount: (() => { const n = Number(input.discountAmount ?? 0); return Number.isFinite(n) && n >= 0 ? Math.round(n * 100) / 100 : 0; })(),
   };
 }
 
@@ -56,7 +59,7 @@ function getSale(db, saleId) {
   const sale = db.prepare(`
     SELECT s.id, s.invoice_number, s.customer_id,
            COALESCE(c.name, 'Walk-in customer') AS customer_name, c.phone AS customer_phone,
-           s.subtotal, s.tax, s.tax_rate, s.show_tax, s.total, s.payment_method,
+           s.subtotal, s.discount, s.tax, s.tax_rate, s.show_tax, s.total, s.payment_method,
            s.amount_paid, s.payment_status, s.created_at,
            s.parcel_charge, s.travel_charge, s.delivery_charge, s.other_charge, s.other_charge_label
     FROM sales s
@@ -65,7 +68,7 @@ function getSale(db, saleId) {
   `).get(saleId);
   if (!sale) throw new Error("Saved invoice could not be loaded");
   const items = db.prepare(`
-    SELECT product_id, product_name, variant, unit, quantity, price, subtotal
+    SELECT product_id, product_name, variant, unit, quantity, price, original_price, subtotal
     FROM sale_items
     WHERE sale_id = ?
     ORDER BY id
@@ -114,14 +117,17 @@ function registerSaleHandlers() {
         if (item.quantity > product.stock) {
           throw new Error(`${product.name} has only ${product.stock} ${product.unit} available`);
         }
-        const subtotal = Math.round(item.quantity * product.selling_price * 100) / 100;
-        return { ...item, product, subtotal };
+        const unitPrice = item.customPrice ?? product.selling_price;
+        const subtotal = Math.round(item.quantity * unitPrice * 100) / 100;
+        return { ...item, product, unitPrice, subtotal };
       });
       const settings = getAppSettings(db);
       const subtotal = Math.round(saleItems.reduce((sum, item) => sum + item.subtotal, 0) * 100) / 100;
-      const tax = Math.round(subtotal * settings.taxRate / 100 * 100) / 100;
+      const discount = Math.min(sale.discountAmount, subtotal);
+      const discountedSubtotal = subtotal - discount;
+      const tax = Math.round(discountedSubtotal * settings.taxRate / 100 * 100) / 100;
       const extraCharges = sale.parcelCharge + sale.travelCharge + sale.deliveryCharge + sale.otherCharge;
-      const total = Math.round((subtotal + tax + extraCharges) * 100) / 100;
+      const total = Math.round((discountedSubtotal + tax + extraCharges) * 100) / 100;
       const amountPaid = sale.paymentMethod === "Credit / due" ? 0 : total;
       const paymentStatus = amountPaid >= total ? "paid" : "due";
       let sequence = (db.prepare("SELECT COALESCE(MAX(seq), 0) AS value FROM sqlite_sequence WHERE name = 'sales'").get().value || 0) + 1;
@@ -130,33 +136,17 @@ function registerSaleHandlers() {
         invoiceNumber = `${settings.shortName}-${String(sequence).padStart(4, "0")}`;
         sequence += 1;
       } while (db.prepare("SELECT 1 FROM sales WHERE invoice_number = ?").get(invoiceNumber));
-      const saleResult = db.prepare(`
-        INSERT INTO sales
-          (invoice_number, customer_id, subtotal, tax, tax_rate, show_tax, total, payment_method, amount_paid, payment_status,
-           parcel_charge, travel_charge, delivery_charge, other_charge, other_charge_label)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(
-        invoiceNumber,
-        sale.customerId,
-        subtotal,
-        tax,
-        settings.taxRate,
-        settings.showTax ? 1 : 0,
-        total,
-        sale.paymentMethod,
-        amountPaid,
-        paymentStatus,
-        sale.parcelCharge,
-        sale.travelCharge,
-        sale.deliveryCharge,
-        sale.otherCharge,
-        sale.otherChargeLabel,
+      const saleResult = db.prepare("INSERT INTO sales (invoice_number, customer_id, subtotal, tax, tax_rate, show_tax, total, payment_method, amount_paid, payment_status, parcel_charge, travel_charge, delivery_charge, other_charge, other_charge_label) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").run(
+        invoiceNumber, sale.customerId, subtotal, tax, settings.taxRate, settings.showTax ? 1 : 0,
+        total, sale.paymentMethod, amountPaid, paymentStatus,
+        sale.parcelCharge, sale.travelCharge, sale.deliveryCharge, sale.otherCharge, sale.otherChargeLabel,
       );
       const saleId = Number(saleResult.lastInsertRowid);
+      if (discount > 0) db.prepare("UPDATE sales SET discount = ? WHERE id = ?").run(discount, saleId);
       const insertItem = db.prepare(`
         INSERT INTO sale_items
-          (sale_id, product_id, product_name, variant, unit, quantity, price, subtotal)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+          (sale_id, product_id, product_name, variant, unit, quantity, price, original_price, subtotal)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
       const reduceStock = db.prepare(`
         UPDATE products SET stock = stock - ?
@@ -175,6 +165,7 @@ function registerSaleHandlers() {
           item.product.variant,
           item.product.unit,
           item.quantity,
+          item.unitPrice,
           item.product.selling_price,
           item.subtotal,
         );

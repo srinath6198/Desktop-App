@@ -60,6 +60,7 @@ CREATE TABLE IF NOT EXISTS sales (
   invoice_number TEXT NOT NULL UNIQUE,
   customer_id INTEGER,
   subtotal REAL NOT NULL DEFAULT 0,
+  discount REAL NOT NULL DEFAULT 0,
   tax REAL NOT NULL DEFAULT 0,
   total REAL NOT NULL DEFAULT 0,
   payment_method TEXT NOT NULL DEFAULT 'cash',

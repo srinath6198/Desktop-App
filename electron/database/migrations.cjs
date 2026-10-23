@@ -77,6 +77,7 @@ function runMigrations(db) {
       ["delivery_charge", "REAL NOT NULL DEFAULT 0"],
       ["other_charge", "REAL NOT NULL DEFAULT 0"],
       ["other_charge_label", "TEXT NOT NULL DEFAULT 'Other'"],
+      ["discount", "REAL NOT NULL DEFAULT 0"],
     ];
     for (const [column, definition] of saleMigrations) {
       if (!saleColumns.has(column)) {
@@ -94,6 +95,7 @@ function runMigrations(db) {
       ["product_name", "TEXT NOT NULL DEFAULT ''"],
       ["variant", "TEXT NOT NULL DEFAULT ''"],
       ["unit", "TEXT NOT NULL DEFAULT ''"],
+      ["original_price", "REAL"],
     ];
     for (const [column, definition] of saleItemMigrations) {
       if (!saleItemColumns.has(column)) {

@@ -65,8 +65,10 @@ function addImageDataUrl(product) {
       image_data_url: `data:${mimeType};base64,${image.toString("base64")}`,
     };
   } catch (error) {
-    console.error(`Unable to read image for product ${product.id}:`, error);
-    return { ...product, image_data_url: null };
+    if (error.code === "ENOENT") {
+      try { getDatabase().prepare("UPDATE products SET image_path = NULL WHERE id = ?").run(product.id); } catch (_) {}
+    }
+    return { ...product, image_path: null, image_data_url: null };
   }
 }
 
