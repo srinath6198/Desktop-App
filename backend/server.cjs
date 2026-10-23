@@ -7,6 +7,7 @@ const { GridFSBucket, MongoClient, ObjectId } = require("mongodb");
 const PORT = Number(process.env.PORT || 3000);
 const MAX_BACKUP_BYTES = 256 * 1024 * 1024;
 const uri = process.env.MONGODB_URI;
+console.log("Connecting to MongoDB...",uri);
 const accessToken = process.env.BACKUP_API_TOKEN;
 const databaseName = process.env.MONGODB_DATABASE || "flower_billing";
 
@@ -134,7 +135,7 @@ async function start() {
   await mongo.connect();
   database = mongo.db(databaseName);
   bucket = new GridFSBucket(database, { bucketName: "encrypted_backups" });
-
+console.log("Connecting to MongoDB...",uri);
   const server = http.createServer((request, response) => {
     handleRequest(request, response).catch((error) => {
       console.error("Backup API request failed:", error);
