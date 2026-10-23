@@ -12,4 +12,6 @@ export const notificationService = {
   markAllRead: () => getApi().markAllRead(),
   delete: (id) => getApi().delete(id),
   clearAll: () => getApi().clearAll(),
+  lowStock: () => getApi().lowStock(),
+  pendingCredit: () => getApi().pendingCredit(),
 };
