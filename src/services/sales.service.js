@@ -15,7 +15,7 @@ export const salesService = {
     return getSalesApi().get(Number(saleId))
   },
 
-  create({ customerId, paymentMethod, items, parcelCharge, travelCharge, deliveryCharge, otherCharge, otherChargeLabel }) {
+  create({ customerId, paymentMethod, items, discountAmount, customPrices, parcelCharge, travelCharge, deliveryCharge, otherCharge, otherChargeLabel }) {
     return getSalesApi().create({
       customerId: customerId == null ? null : Number(customerId),
       paymentMethod,
@@ -23,6 +23,8 @@ export const salesService = {
         productId: Number(item.productId),
         quantity: Number(item.quantity),
       })),
+      discountAmount: Number(discountAmount ?? 0),
+      customPrices: customPrices ?? {},
       parcelCharge: Number(parcelCharge ?? 0),
       travelCharge: Number(travelCharge ?? 0),
       deliveryCharge: Number(deliveryCharge ?? 0),

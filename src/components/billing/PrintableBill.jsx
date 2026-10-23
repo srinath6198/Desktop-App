@@ -43,7 +43,10 @@ function PrintableBill({ bill }) {
           <div className="receipt-line" key={`${item.name}-${item.variant}-${index}`}>
             <span>
               {item.name}{item.variant ? ` (${item.variant})` : ""}
-              <small>{item.quantity} {item.unit} × {formatCurrency(item.unitPrice)}</small>
+              <small>
+                {item.originalPrice && <s style={{ opacity: 0.5, marginRight: 4 }}>{formatCurrency(item.originalPrice)}</s>}
+                {item.quantity} {item.unit} × {formatCurrency(item.unitPrice)}
+              </small>
             </span>
             <strong>{formatCurrency(item.unitPrice * item.quantity)}</strong>
           </div>
@@ -51,6 +54,9 @@ function PrintableBill({ bill }) {
       </div>
       <hr />
       <div className="receipt-meta"><span>Subtotal</span><span>{formatCurrency(bill.subtotal)}</span></div>
+      {bill.discount > 0 && (
+        <div className="receipt-meta"><span>Discount</span><span>− {formatCurrency(bill.discount)}</span></div>
+      )}
       {bill.showTax && (
         <div className="receipt-meta"><span>Tax ({bill.taxRate}%)</span><span>{formatCurrency(bill.tax)}</span></div>
       )}

@@ -55,8 +55,10 @@ function addProfileDataUrl(customer) {
       profile_image_data_url: `data:${mimeType};base64,${image.toString("base64")}`,
     };
   } catch (error) {
-    console.error(`Unable to read profile image for customer ${customer.id}:`, error);
-    return { ...customer, profile_image_data_url: null };
+    if (error.code === "ENOENT") {
+      try { getDatabase().prepare("UPDATE customers SET profile_image_path = NULL WHERE id = ?").run(customer.id); } catch (_) {}
+    }
+    return { ...customer, profile_image_path: null, profile_image_data_url: null };
   }
 }
 
