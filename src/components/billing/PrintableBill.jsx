@@ -23,6 +23,15 @@ function PrintableBill({ bill }) {
     ? "Paid"
     : `Due ${formatCurrency(bill.total - bill.amountPaid)}`
   const shop = bill.shop ?? {}
+  const discount = Number(bill.discount ?? bill.discountAmount ?? bill.discount_amount ?? 0)
+  const parcelCharge = Number(bill.parcelCharge ?? bill.parcel_charge ?? 0)
+  const travelCharge = Number(bill.travelCharge ?? bill.travel_charge ?? 0)
+  const deliveryCharge = Number(bill.deliveryCharge ?? bill.delivery_charge ?? 0)
+  const otherCharge = Number(bill.otherCharge ?? bill.other_charge ?? 0)
+  const otherChargeLabel = bill.otherChargeLabel || bill.other_charge_label || "Other"
+  const tax = Number(bill.tax ?? 0)
+  const taxRate = bill.taxRate ?? bill.tax_rate ?? 0
+  const showTax = (bill.showTax !== false && bill.show_tax !== 0)
 
   return (
     <article className="print-receipt">
@@ -54,16 +63,16 @@ function PrintableBill({ bill }) {
       </div>
       <hr />
       <div className="receipt-meta"><span>Subtotal</span><span>{formatCurrency(bill.subtotal)}</span></div>
-      {bill.discount > 0 && (
-        <div className="receipt-meta"><span>Discount</span><span>− {formatCurrency(bill.discount)}</span></div>
+      {(discount > 0 || Number(bill.discount) > 0 || Number(bill.discountAmount) > 0) && (
+        <div className="receipt-meta"><span>Discount amount</span><span>− {formatCurrency(discount || bill.discount || bill.discountAmount)}</span></div>
       )}
-      {bill.showTax && (
-        <div className="receipt-meta"><span>Tax ({bill.taxRate}%)</span><span>{formatCurrency(bill.tax)}</span></div>
+      {showTax && tax > 0 && (
+        <div className="receipt-meta"><span>Tax ({taxRate}%)</span><span>{formatCurrency(tax)}</span></div>
       )}
-      {bill.parcelCharge > 0 && <div className="receipt-meta"><span>Parcel charge</span><span>{formatCurrency(bill.parcelCharge)}</span></div>}
-      {bill.travelCharge > 0 && <div className="receipt-meta"><span>Travel charge</span><span>{formatCurrency(bill.travelCharge)}</span></div>}
-      {bill.deliveryCharge > 0 && <div className="receipt-meta"><span>Delivery charge</span><span>{formatCurrency(bill.deliveryCharge)}</span></div>}
-      {bill.otherCharge > 0 && <div className="receipt-meta"><span>{bill.otherChargeLabel || "Other"}</span><span>{formatCurrency(bill.otherCharge)}</span></div>}
+      {parcelCharge > 0 && <div className="receipt-meta"><span>Parcel charge</span><span>{formatCurrency(parcelCharge)}</span></div>}
+      {travelCharge > 0 && <div className="receipt-meta"><span>Travel charge</span><span>{formatCurrency(travelCharge)}</span></div>}
+      {deliveryCharge > 0 && <div className="receipt-meta"><span>Delivery charge</span><span>{formatCurrency(deliveryCharge)}</span></div>}
+      {otherCharge > 0 && <div className="receipt-meta"><span>{otherChargeLabel}</span><span>{formatCurrency(otherCharge)}</span></div>}
       <div className="receipt-meta receipt-grand-total"><strong>Total</strong><strong>{formatCurrency(bill.total)}</strong></div>
       <div className="receipt-meta"><span>Payment</span><span>{bill.payment}</span></div>
       <div className="receipt-meta"><span>Status</span><span>{dueStatus}</span></div>

@@ -881,7 +881,7 @@ input {
 }
 
 .modal-card {
-  width: min(100%, 510px);
+  width: min(100%, 700px);
   padding: 22px;
   background: #fff;
   border: 1px solid var(--line);
@@ -3754,3 +3754,84 @@ input {
 
 .rate-editor-diff.neg { color: #198754; }
 .rate-editor-diff.pos { color: #c0392b; }
+
+/* ─── Price Changes page ────────────────────────────────────────── */
+.price-changes-filters {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.price-changes-filters .field-search {
+  flex: 1;
+  min-width: 200px;
+}
+
+.price-changes-count {
+  font-size: 13px;
+  color: var(--text-muted, #777);
+  margin: 0 0 14px;
+}
+
+.price-changes-table-wrap {
+  overflow-x: auto;
+}
+
+.price-changes-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.price-changes-table th,
+.price-changes-table td {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--line, #e8ede9);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.price-changes-table th {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted, #777);
+  background: var(--surface-alt, #f7faf8);
+}
+
+.price-changes-table tbody tr:hover {
+  background: var(--hover, #f2f7f4);
+}
+
+.price-changes-table .col-right { text-align: right; }
+.price-changes-table .col-center { text-align: center; }
+
+.price-changes-table .table-empty-cell {
+  text-align: center;
+  padding: 36px 0;
+  color: var(--text-muted, #888);
+}
+
+.product-code-tag {
+  display: block;
+  font-size: 11px;
+  color: var(--text-muted, #888);
+  margin-top: 2px;
+}
+
+.selling-price-value {
+  color: var(--accent, #198754);
+}
+
+.price-row-actions {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+}
+
+.button-sm {
+  padding: 4px 10px !important;
+  font-size: 12px !important;
+}

@@ -102,6 +102,20 @@ function runMigrations(db) {
         db.exec(`ALTER TABLE sale_items ADD COLUMN ${column} ${definition}`);
       }
     }
+
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS price_changes (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        product_id INTEGER NOT NULL,
+        product_name TEXT NOT NULL,
+        variant TEXT NOT NULL DEFAULT '',
+        old_price REAL NOT NULL,
+        new_price REAL NOT NULL,
+        reason TEXT,
+        changed_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (product_id) REFERENCES products(id)
+      )
+    `);
   })();
 }
 

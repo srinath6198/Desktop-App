@@ -16,6 +16,7 @@ import Reports from "../pages/reports/Reports";
 import ProfileSettings from "../pages/settings/ProfileSettings";
 import BackupSettings from "../pages/settings/BackupSettings";
 import StockEntry from "../pages/stock/StockEntery";
+import PriceChanges from "../pages/priceChanges/PriceChanges";
 
 function AppRoutes() {
   return (
@@ -27,6 +28,7 @@ function AppRoutes() {
         <Route path="billing/history" element={<SalesHistory />} />
 
         <Route path="products" element={<Products />} />
+        <Route path="price-changes" element={<PriceChanges />} />
         <Route path="purchases" element={<Purchases />} />
         <Route path="customers" element={<Customers />} />
         <Route path="customers/credit" element={<CustomerCredit />} />

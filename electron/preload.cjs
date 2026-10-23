@@ -19,6 +19,10 @@ contextBridge.exposeInMainWorld("desktopAPI", {
       ipcRenderer.invoke("products:update", product),
     setActive: (id, active) =>
       ipcRenderer.invoke("products:set-active", id, active),
+    updatePrice: (input) =>
+      ipcRenderer.invoke("products:update-price", input),
+    priceHistory: (filters) =>
+      ipcRenderer.invoke("products:price-history", filters),
   },
 
   suppliers: {

@@ -219,7 +219,12 @@ function Reprint({ onClose }) {
                     <div className="saved-bill-preview-item" key={`${item.product_id}-${index}`}>
                       <span>
                         <strong>{item.product_name}{item.variant ? ` (${item.variant})` : ""}</strong>
-                        <small>{item.quantity} {item.unit} × {formatCurrency(item.price)}</small>
+                        <small>
+                          {item.original_price != null && item.original_price !== item.price && (
+                            <s style={{ opacity: 0.5, marginRight: 4 }}>{formatCurrency(item.original_price)}</s>
+                          )}
+                          {item.quantity} {item.unit} × {formatCurrency(item.price)}
+                        </small>
                       </span>
                       <strong>{formatCurrency(item.subtotal)}</strong>
                     </div>
@@ -227,7 +232,30 @@ function Reprint({ onClose }) {
                 </div>
                 <div className="saved-bill-preview-totals">
                   <div><span>Subtotal</span><span>{formatCurrency(selectedBill.subtotal)}</span></div>
-                  <div><span>Tax</span><span>{formatCurrency(selectedBill.tax)}</span></div>
+                  {selectedBill.discount > 0 && (
+                    <div>
+                      <span>Discount amount</span>
+                      <span className="discount-amount">− {formatCurrency(selectedBill.discount)}</span>
+                    </div>
+                  )}
+                  {selectedBill.show_tax !== 0 && selectedBill.tax > 0 && (
+                    <div>
+                      <span>Tax{selectedBill.tax_rate ? ` (${selectedBill.tax_rate}%)` : ""}</span>
+                      <span>{formatCurrency(selectedBill.tax)}</span>
+                    </div>
+                  )}
+                  {selectedBill.parcel_charge > 0 && (
+                    <div><span>Parcel charge</span><span>{formatCurrency(selectedBill.parcel_charge)}</span></div>
+                  )}
+                  {selectedBill.travel_charge > 0 && (
+                    <div><span>Travel charge</span><span>{formatCurrency(selectedBill.travel_charge)}</span></div>
+                  )}
+                  {selectedBill.delivery_charge > 0 && (
+                    <div><span>Delivery charge</span><span>{formatCurrency(selectedBill.delivery_charge)}</span></div>
+                  )}
+                  {selectedBill.other_charge > 0 && (
+                    <div><span>{selectedBill.other_charge_label || "Other"}</span><span>{formatCurrency(selectedBill.other_charge)}</span></div>
+                  )}
                   <div className="bill-total"><strong>Total</strong><strong>{formatCurrency(selectedBill.total)}</strong></div>
                   <div><span>Payment</span><span>{selectedBill.payment_method}</span></div>
                   <div>

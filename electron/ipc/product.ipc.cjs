@@ -342,6 +342,55 @@ function registerProductHandlers() {
     }
   });
 
+  ipcMain.handle("products:update-price", (_event, input) => {
+    if (!input || typeof input !== "object") throw new Error("Price update details are required");
+    const id = Number(input.productId);
+    if (!Number.isInteger(id) || id <= 0) throw new Error("Valid product ID is required");
+    const newPrice = Number(input.newPrice);
+    if (!Number.isFinite(newPrice) || newPrice < 0) throw new Error("Enter a valid selling price (zero or more)");
+    const reason = typeof input.reason === "string" ? input.reason.trim().slice(0, 300) || null : null;
+
+    const db = getDatabase();
+    const product = db.prepare("SELECT id, name, variant, selling_price FROM products WHERE id = ?").get(id);
+    if (!product) throw new Error("Product not found");
+
+    const oldPrice = product.selling_price;
+    db.transaction(() => {
+      db.prepare("UPDATE products SET selling_price = ? WHERE id = ?").run(newPrice, id);
+      db.prepare(`
+        INSERT INTO price_changes (product_id, product_name, variant, old_price, new_price, reason)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).run(id, product.name, product.variant ?? "", oldPrice, newPrice, reason);
+    })();
+
+    return getProduct(db, id);
+  });
+
+  ipcMain.handle("products:price-history", (_event, filters) => {
+    const db = getDatabase();
+    const limit = Math.min(Number.isInteger(filters?.limit) && filters.limit > 0 ? filters.limit : 200, 500);
+    const productId = filters?.productId ? Number(filters.productId) : null;
+
+    if (productId !== null) {
+      return db.prepare(`
+        SELECT pc.*, p.name AS current_name
+        FROM price_changes pc
+        LEFT JOIN products p ON p.id = pc.product_id
+        WHERE pc.product_id = ?
+        ORDER BY pc.id DESC
+        LIMIT ?
+      `).all(productId, limit);
+    }
+
+    return db.prepare(`
+      SELECT pc.*, p.name AS current_name
+      FROM price_changes pc
+      LEFT JOIN products p ON p.id = pc.product_id
+      ORDER BY pc.id DESC
+      LIMIT ?
+    `).all(limit);
+  });
+
   ipcMain.handle("products:set-active", (_event, id, active) => {
     if (!Number.isInteger(id) || id <= 0) {
       throw new Error("Valid product ID is required");
